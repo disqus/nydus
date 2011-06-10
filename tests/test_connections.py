@@ -1,6 +1,6 @@
 from dingus import Dingus
 
-from nydus.db import Cluster
+from nydus.db import Cluster, create_cluster
 from nydus.db.routers import BaseRouter
 from nydus.db.backends import BaseConnection
 
@@ -22,12 +22,21 @@ class DummyRouter(BaseRouter):
         return [0]
 
 class ClusterTest(BaseTest):
+    def test_create_cluster(self):
+        c = create_cluster({
+            'engine': DummyConnection,
+            'router': DummyRouter,
+            'hosts': {
+                0: {'resp': 'bar'},
+            }
+        })
+        self.assertEquals(len(c), 1)
+        
     def test_init(self):
         c = Cluster(
             hosts={0: BaseConnection(num=1)},
         )
         self.assertEquals(len(c), 1)
-        self.assertTrue(c.redis)
     
     def test_proxy(self):
         c = DummyConnection(num=1, resp='bar')
