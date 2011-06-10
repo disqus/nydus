@@ -16,7 +16,7 @@ def create_pool(settings):
     """
     redis = create_pool({
         'engine': 'nydus.db.backends.redis.Redis',
-        'router': 'nydus.db.routers.redis.RedisRouter',
+        'router': 'nydus.db.routers.redis.PartitionRouter',
         'hosts': {
             0: {'db': 0},
             1: {'db': 1},

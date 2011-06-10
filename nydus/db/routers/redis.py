@@ -2,7 +2,7 @@ from binascii import crc32
 
 from nydus.db.routers import BaseRouter
 
-class RedisRouter(BaseRouter):
+class PartitionRouter(BaseRouter):
     def get_db(self, pool, func, key=None, *args, **kwargs):
         # Assume first argument is a key
         if not key:
