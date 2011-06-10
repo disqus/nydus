@@ -6,6 +6,10 @@ use_setuptools()
 from setuptools import setup, find_packages
 
 tests_require = [
+    'nose',
+    'unittest2',
+    'dingus',
+    'redis',
 ]
 
 install_requires = [
@@ -24,7 +28,7 @@ setup(
     dependency_links=[],
     tests_require=tests_require,
     extras_require={'test': tests_require},
-    # test_suite='runtests.runtests',
+    test_suite='nose.collector',
     include_package_data=True,
     classifiers=[
         'Intended Audience :: Developers',
