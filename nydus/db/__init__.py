@@ -1,9 +1,9 @@
 """
 Disqus generic connections wrappers.
 
->>> from connections.db import create_pool
+>>> from nydus.db import create_pool
 >>> redis = create_pool({
->>>     'engine': 'connections.db.backends.redis.Redis',
+>>>     'engine': 'nydus.db.backends.redis.Redis',
 >>> })
 >>> res = conn.incr('foo')
 >>> assert res == 1
@@ -15,8 +15,8 @@ from nydus.db.routers import BaseRouter
 def create_pool(settings):
     """
     redis = create_pool({
-        'engine': 'connections.db.backends.redis.Redis',
-        'router': 'connections.db.routers.redis.RedisRouter',
+        'engine': 'nydus.db.backends.redis.Redis',
+        'router': 'nydus.db.routers.redis.RedisRouter',
         'hosts': {
             0: {'db': 0},
             1: {'db': 1},
