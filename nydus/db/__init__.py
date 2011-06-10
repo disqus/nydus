@@ -1,8 +1,8 @@
 """
 Disqus generic connections wrappers.
 
->>> from nydus.db import create_pool
->>> redis = create_pool({
+>>> from nydus.db import create_cluster
+>>> redis = create_cluster({
 >>>     'engine': 'nydus.db.backends.redis.Redis',
 >>> })
 >>> res = conn.incr('foo')
@@ -12,9 +12,9 @@ Disqus generic connections wrappers.
 from nydus.utils import import_string
 from nydus.db.routers import BaseRouter
 
-def create_pool(settings):
+def create_cluster(settings):
     """
-    redis = create_pool({
+    redis = create_cluster({
         'engine': 'nydus.db.backends.redis.Redis',
         'router': 'nydus.db.routers.redis.PartitionRouter',
         'hosts': {
@@ -35,7 +35,7 @@ def create_pool(settings):
         router = BaseRouter()
         
     # Build the connection pool
-    return ConnectionPool(
+    return Cluster(
         router=router,
         hosts=dict(
             (conn_number, conn(num=conn_number, **host_settings))
@@ -44,7 +44,7 @@ def create_pool(settings):
         ),
     )
 
-class ConnectionPool(object):
+class Cluster(object):
     """
     Holds a cluster of connections.
     """

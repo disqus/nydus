@@ -1,6 +1,6 @@
 from dingus import Dingus
 
-from nydus.db import ConnectionPool
+from nydus.db import Cluster
 from nydus.db.routers import BaseRouter
 from nydus.db.backends import BaseConnection
 
@@ -21,9 +21,9 @@ class DummyRouter(BaseRouter):
             return [1]
         return [0]
 
-class ConnectionPoolTest(BaseTest):
+class ClusterTest(BaseTest):
     def test_init(self):
-        c = ConnectionPool(
+        c = Cluster(
             hosts={0: BaseConnection(num=1)},
         )
         self.assertEquals(len(c), 1)
@@ -31,14 +31,14 @@ class ConnectionPoolTest(BaseTest):
     
     def test_proxy(self):
         c = DummyConnection(num=1, resp='bar')
-        p = ConnectionPool(
+        p = Cluster(
             hosts={0: c},
         )
         self.assertEquals(p.foo(), 'bar')
 
     def test_disconnect(self):
         c = Dingus()
-        p = ConnectionPool(
+        p = Cluster(
             hosts={0: c},
         )
         p.disconnect()
@@ -51,7 +51,7 @@ class ConnectionPoolTest(BaseTest):
 
         # test dummy router
         r = DummyRouter()
-        p = ConnectionPool(
+        p = Cluster(
             hosts={0: c, 1: c2},
             router=r,
         )
@@ -59,7 +59,7 @@ class ConnectionPoolTest(BaseTest):
         self.assertEquals(p.foo('foo'), 'bar')
 
         # test default routing behavior
-        p = ConnectionPool(
+        p = Cluster(
             hosts={0: c, 1: c2},
         )
         self.assertEquals(p.foo(), ['foo', 'bar'])

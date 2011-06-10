@@ -1,7 +1,7 @@
 from .. import BaseTest
 
 from nydus.db.backends.redis import Redis
-from nydus.db import ConnectionPool
+from nydus.db import Cluster
 
 class RedisTest(BaseTest):
     def setUp(self):
@@ -12,7 +12,7 @@ class RedisTest(BaseTest):
         self.assertEquals(self.redis.incr('RedisTest_proxy'), 1)
     
     def test_with_pool(self):
-        p = ConnectionPool(
+        p = Cluster(
             hosts={0: self.redis},
         )
         self.assertEquals(p.incr('RedisTest_with_pool'), 1)

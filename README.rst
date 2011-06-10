@@ -5,8 +5,8 @@ Generic database utilities, including connection pooling and routing so you can 
 
 The following example creates a Redis connection pool which will distributed reads and writes based on a simple modulus lookup of the hashed key::
 
-    >>> from nydus.db import create_pool
-    >>> redis = create_pool({
+    >>> from nydus.db import create_cluster
+    >>> redis = create_cluster({
     >>>     'engine': 'nydus.db.backends.redis.Redis',
     >>>     'router': 'nydus.db.routers.redis.PartitionRouter',
     >>>     'hosts': {
