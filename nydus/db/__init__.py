@@ -25,12 +25,17 @@ def create_cluster(settings):
     })
     """
     # Pull in our client
-    conn = import_string(settings['engine'])
+    if isinstance(settings['engine'], basestring):
+        conn = import_string(settings['engine'])
+    else:
+        conn = settings['engine']
 
     # Pull in our router
     router = settings.get('router')
-    if router:
+    if isinstance(router, basestring):
         router = import_string(router)()
+    elif router:
+        router = router()
     else:
         router = BaseRouter()
         
