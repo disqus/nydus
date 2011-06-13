@@ -9,8 +9,9 @@ Disqus generic connections wrappers.
 >>> assert res == 1
 """
 
-from nydus.utils import import_string
+from nydus import conf
 from nydus.db.routers import BaseRouter
+from nydus.utils import import_string
 
 def create_cluster(settings):
     """
@@ -95,3 +96,40 @@ class ConnectionProxy(object):
             return results[0]
 
         return results
+
+class LazyConnectionHandler(dict):
+    """
+    Maps clusters of connections within a dictionary.
+    """
+    def __init__(self, conf_callback):
+        self.conf_callback = conf_callback
+        self.conf_settings = {}
+        self._is_ready = False
+    
+    def __getitem__(self, key):
+        if not self.is_ready():
+            self.reload()
+        return super(LazyConnectionHandler, self).__getitem__(key)
+
+    def __getattr__(self, key):
+        if not self.is_ready():
+            self.reload()
+        return super(LazyConnectionHandler, self).__getattr__(key)
+
+    def is_ready(self):
+        return self._is_ready
+        # if self.conf_settings != self.conf_callback():
+        #     return False
+        # return True
+
+    def reload(self):
+        for conn_alias, conn_settings in self.conf_callback().iteritems():
+            self[conn_alias] = create_cluster(conn_settings)        
+        self._is_ready = True
+
+    def disconnect(self):
+        """Disconnects all connections in pool"""
+        for connection in self.itervalues():
+            connection.disconnect()
+
+connections = LazyConnectionHandler(lambda:conf.CONNECTIONS)

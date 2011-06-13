@@ -10,6 +10,8 @@ tests_require = [
     'unittest2',
     'dingus',
     'redis',
+    'Django>=1.2,<1.4',
+    'psycopg2',
 ]
 
 install_requires = [
