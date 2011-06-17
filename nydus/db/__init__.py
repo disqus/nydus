@@ -75,6 +75,23 @@ class Cluster(object):
         for connection in self.hosts.itervalues():
             connection.disconnect()
 
+    def get_conn(self, *args, **kwargs):
+        """
+        Returns a connection object from the router given ``args``.
+
+        Useful in cases where a connection cannot be automatically determined
+        during all steps of the process. An example of this would be
+        Redis pipelines.
+        """
+        if self.router:
+            db_nums = self.router.get_db(self, 'get_conn', *args, **kwargs)
+        else:
+            db_nums = range(len(self))
+        
+        if len(db_nums) == 1:
+            return self[db_nums[0]]
+        return [self[n] for n in db_nums]
+
 class ConnectionProxy(object):
     """
     Handles routing function calls to the proper connection.
