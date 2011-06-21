@@ -72,7 +72,7 @@ class DjangoSQLiteTest(BaseTest):
         cursor = self.db.execute('SELECT 1')
         self.assertEquals(cursor.fetchone(), (1,))
     
-    def test_with_pool(self):
+    def test_with_cluster(self):
         p = Cluster(
             hosts={0: self.db},
         )
@@ -89,7 +89,7 @@ class DjangoSQLiteTest(BaseTest):
 #         cursor = self.db.execute('SELECT 1')
 #         self.assertEquals(cursor.fetchone(), (1,))
 #     
-#     def test_with_pool(self):
+#     def test_with_cluster(self):
 #         p = Cluster(
 #             hosts={0: self.db},
 #         )

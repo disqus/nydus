@@ -11,8 +11,8 @@ from binascii import crc32
 from nydus.db.routers import BaseRouter
 
 class PartitionRouter(BaseRouter):
-    def get_db(self, pool, func, key=None, *args, **kwargs):
+    def get_db(self, cluster, func, key=None, *args, **kwargs):
         # Assume first argument is a key
         if not key:
-           return range(len(pool))
-        return [crc32(str(key)) % len(pool)]
+           return range(len(cluster))
+        return [crc32(str(key)) % len(cluster)]

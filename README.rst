@@ -1,9 +1,9 @@
 Nydus
 =====
 
-Generic database utilities, including connection pooling and routing so you can scale like a pro.
+Generic database utilities, including connection clustering and routing so you can scale like a pro.
 
-The following example creates a Redis connection pool which will distributed reads and writes based on a simple modulus lookup of the hashed key::
+The following example creates a Redis connection cluster which will distributed reads and writes based on a simple modulus lookup of the hashed key::
 
     >>> from nydus.db import create_cluster
     >>> redis = create_cluster({

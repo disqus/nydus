@@ -19,8 +19,8 @@ class RedisTest(BaseTest):
     def test_proxy(self):
         self.assertEquals(self.redis.incr('RedisTest_proxy'), 1)
     
-    def test_with_pool(self):
+    def test_with_cluster(self):
         p = Cluster(
             hosts={0: self.redis},
         )
-        self.assertEquals(p.incr('RedisTest_with_pool'), 1)
+        self.assertEquals(p.incr('RedisTest_with_cluster'), 1)

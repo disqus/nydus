@@ -23,7 +23,7 @@ class DummyConnection(BaseConnection):
         return self.resp
 
 class DummyRouter(BaseRouter):
-    def get_db(self, pool, func, key=None, *args, **kwargs):
+    def get_db(self, cluster, func, key=None, *args, **kwargs):
         # Assume first argument is a key
         if key == 'foo':
             return [1]

@@ -46,7 +46,7 @@ def create_cluster(settings):
     else:
         router = BaseRouter()
         
-    # Build the connection pool
+    # Build the connection cluster
     return Cluster(
         router=router,
         hosts=dict(
@@ -77,7 +77,7 @@ class Cluster(object):
             return ConnectionProxy(self, attr)
 
     def disconnect(self):
-        """Disconnects all connections in pool"""
+        """Disconnects all connections in cluster"""
         for connection in self.hosts.itervalues():
             connection.disconnect()
 
@@ -102,17 +102,17 @@ class ConnectionProxy(object):
     """
     Handles routing function calls to the proper connection.
     """
-    def __init__(self, pool, attr):
-        self.pool = pool
+    def __init__(self, cluster, attr):
+        self.cluster = cluster
         self.attr = attr
     
     def __call__(self, *args, **kwargs):
-        if self.pool.router:
-            db_nums = self.pool.router.get_db(self.pool, self.attr, *args, **kwargs)
+        if self.cluster.router:
+            db_nums = self.cluster.router.get_db(self.cluster, self.attr, *args, **kwargs)
         else:
-            db_nums = range(len(self.pool))
+            db_nums = range(len(self.cluster))
 
-        results = [getattr(self.pool[n], self.attr)(*args, **kwargs) for n in db_nums]
+        results = [getattr(self.cluster[n], self.attr)(*args, **kwargs) for n in db_nums]
 
         # If we only had one db to query, we simply return that res
         if len(results) == 1:
@@ -151,7 +151,7 @@ class LazyConnectionHandler(dict):
         self._is_ready = True
 
     def disconnect(self):
-        """Disconnects all connections in pool"""
+        """Disconnects all connections in cluster"""
         for connection in self.itervalues():
             connection.disconnect()
 
