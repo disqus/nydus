@@ -15,5 +15,5 @@ The following example creates a Redis connection cluster which will distribute r
     >>>         2: {'db': 2},
     >>>     }
     >>> })
-    >>> res = conn.incr('foo')
+    >>> res = redis.incr('foo')
     >>> assert res == 1
