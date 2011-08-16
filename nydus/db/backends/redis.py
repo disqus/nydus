@@ -13,14 +13,15 @@ from redis import Redis as RedisClient
 from nydus.db.backends import BaseConnection
 
 class Redis(BaseConnection):
-    def __init__(self, host='localhost', port=6379, db=0, **options):
+    def __init__(self, host='localhost', port=6379, db=0, timeout=None, **options):
         self.host = host
         self.port = port
         self.db = db
+        self.timeout = timeout
         super(Redis, self).__init__(**options)
 
     def connect(self):
-        return RedisClient(host=self.host, port=self.port, db=self.db)
+        return RedisClient(host=self.host, port=self.port, db=self.db, socket_timeout=self.timeout)
 
     def disconnect(self):
         self.connection.disconnect()
