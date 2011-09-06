@@ -17,7 +17,7 @@ Disqus generic connections wrappers.
 
 from nydus import conf
 from nydus.db.routers import BaseRouter
-from nydus.utils import import_string
+from nydus.utils import import_string, ThreadPool
 
 def create_cluster(settings):
     """
@@ -74,7 +74,21 @@ class Cluster(object):
         if attr in self.__dict__:
             return self.__dict__[attr]
         else:
-            return ConnectionProxy(self, attr)
+            return CallProxy(self, attr)
+
+    def _execute(self, attr, args, kwargs):
+        if self.router:
+            db_nums = self.router.get_db(self, attr, *args, **kwargs)
+        else:
+            db_nums = range(len(self))
+
+        results = [getattr(self.hosts[num], attr)(*args, **kwargs) for num in db_nums]
+
+        # If we only had one db to query, we simply return that res
+        if len(results) == 1:
+            return results[0]
+
+        return results
 
     def disconnect(self):
         """Disconnects all connections in cluster"""
@@ -98,27 +112,158 @@ class Cluster(object):
             return self[db_nums[0]]
         return [self[n] for n in db_nums]
 
-class ConnectionProxy(object):
+    def map(self, workers=None):
+        return DistributedContextManager(self, workers)
+
+class CallProxy(object):
     """
     Handles routing function calls to the proper connection.
     """
     def __init__(self, cluster, attr):
-        self.cluster = cluster
-        self.attr = attr
+        self._cluster = cluster
+        self._attr = attr
     
     def __call__(self, *args, **kwargs):
-        if self.cluster.router:
-            db_nums = self.cluster.router.get_db(self.cluster, self.attr, *args, **kwargs)
+        return self._cluster._execute(self._attr, args, kwargs)
+
+class EventualCommand(object):
+    _attr = None
+    _wrapped = None
+
+    # introspection support:
+    __members__ = property(lambda self: self.__dir__())
+
+    def __init__(self, attr):
+        self.__dict__.update({
+            '_attr': attr,
+            '_wrapped': None,
+            '_args': [],
+            '_kwargs': {},
+            '_ident': None,
+        })
+        
+    def __call__(self, *args, **kwargs):
+        self.__dict__.update({
+            '_args': args,
+            '_kwargs': kwargs,
+            '_ident': ':'.join(map(str, [id(self._attr), id(self._args), id(self._kwargs)])),
+        })
+        return self
+
+    def __repr__(self):
+        return repr(self._wrapped)
+
+    def __getattr__(self, name):
+        if name in self.__dict__:
+            return self.__dict__[name]
+        return getattr(self._wrapped, name)
+
+    def __setattr__(self, name, value):
+        if name in self.__dict__:
+            self.__dict__[name] = value
         else:
-            db_nums = range(len(self.cluster))
+            setattr(self._wrapped, name, value)
 
-        results = [getattr(self.cluster[n], self.attr)(*args, **kwargs) for n in db_nums]
+    def __delattr__(self, name):
+        if name == "_wrapped":
+            raise TypeError("can't delete _wrapped.")
+        delattr(self._wrapped, name)
 
-        # If we only had one db to query, we simply return that res
-        if len(results) == 1:
-            return results[0]
+    def __dir__(self):
+        return dir(self._wrapped)
 
-        return results
+    def __str__(self):
+        return str(self._wrapped)
+
+    def __unicode__(self):
+        return unicode(self._wrapped)
+
+    def __deepcopy__(self, memo):
+        # Changed to use deepcopy from copycompat, instead of copy
+        # For Python 2.4.
+        from django.utils.copycompat import deepcopy
+        return deepcopy(self._wrapped, memo)
+
+    # Need to pretend to be the wrapped class, for the sake of objects that care
+    # about this (especially in equality tests)
+    def __get_class(self):
+        return self._wrapped.__class__
+    __class__ = property(__get_class)
+
+    def __eq__(self, other):
+        return self._wrapped == other
+
+    def __hash__(self):
+        return hash(self._wrapped)
+
+class DistributedConnection(object):
+    def __init__(self, cluster, workers=None):
+        self._cluster = cluster
+        self._workers = min(workers or len(cluster), 16)
+        self._commands = []
+        self._complete = False
+
+    def __getattr__(self, attr):
+        if attr in self.__dict__:
+            return self.__dict__[attr]
+        else:
+            command = EventualCommand(attr)
+            self._commands.append(command)
+            return command
+
+    def _execute(self):
+        num_commands = len(self._commands)
+        if num_commands == 0:
+            self._results = []
+            return
+
+        pool = None
+
+        for command in self._commands:
+            if self._cluster.router:
+                db_nums = self._cluster.router.get_db(self._cluster, command._attr, *command._args, **command._kwargs)
+            else:
+                db_nums = range(len(self._cluster))
+
+            num_commands += len(db_nums)
+
+            # Don't bother with the ThreadPool if we only need to do one operation
+            if num_commands == 1:
+                self._results = [getattr(self._cluster[db_num], command._attr)(*command._args, **command._kwargs) for db_num in db_nums]
+                return
+
+            elif not pool:
+                pool = ThreadPool(self._workers)
+
+            for db_num in db_nums:
+                pool.add(command._ident, getattr(self._cluster[db_num], command._attr), command._args, command._kwargs)
+
+        result_map = pool.join()
+        for command in self._commands:
+            result = result_map[command._ident]
+            if len(result) == 1:
+                result = result[0]
+            command._wrapped = result
+    
+        self._complete = True
+    
+    def get_results(self):
+        assert self._complete, 'you must execute the commands before fetching results'
+
+        return self._commands
+
+class DistributedContextManager(object):
+    def __init__(self, cluster, workers=None):
+        self._workers = workers
+        self._cluster = cluster
+
+    def __enter__(self):
+        self._handler = DistributedConnection(self._cluster, self._workers)
+        return self._handler
+
+    def __exit__(self, exc_type, exc_value, tb):
+        # we need to break up each command and route it
+        self._handler._execute()
 
 class LazyConnectionHandler(dict):
     """

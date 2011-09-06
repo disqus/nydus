@@ -17,6 +17,9 @@ class BaseConnection(object):
         self._connection = None
         self.num = num
 
+    def __repr__(self):
+        return '<%s: num=%s>' % (self.__class__.__name__, self.num)
+
     @property
     def connection(self):
         if self._connection is None:

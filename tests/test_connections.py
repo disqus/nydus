@@ -101,3 +101,35 @@ class ClusterTest(BaseTest):
         )
         self.assertEquals(p.get_conn(), [c, c2])
         self.assertEquals(p.get_conn('foo'), [c, c2])
+    
+    def test_map(self):
+        c = DummyConnection(num=0, resp='foo')
+        c2 = DummyConnection(num=1, resp='bar')
+
+        # test dummy router
+        r = DummyRouter()
+        p = Cluster(
+            hosts={0: c, 1: c2},
+            router=r,
+        )
+        with p.map() as conn:
+            foo = conn.foo()
+            bar = conn.foo('foo')
+            self.assertEquals(foo, None)
+            self.assertEquals(bar, None)
+
+        self.assertEquals(bar, 'bar')
+        self.assertEquals(foo, 'foo')
+
+        # test default routing behavior
+        p = Cluster(
+            hosts={0: c, 1: c2},
+        )
+        with p.map() as conn:
+            foo = conn.foo()
+            bar = conn.foo('foo')
+            self.assertEquals(foo, None)
+            self.assertEquals(bar, None)
+
+        self.assertEquals(foo, ['foo', 'bar'])
+        self.assertEquals(bar, ['foo', 'bar'])
