@@ -15,8 +15,6 @@ The following example creates a Redis connection cluster which will distribute r
     >>>         1: {'db': 1},
     >>>         2: {'db': 2},
     >>>     }
-    >>>     'max_connections_per_host': 1,
-    >>>     'max_connections': 1, # disable parallel execution
     >>> })
     >>>
     >>> res = redis.incr('foo')
