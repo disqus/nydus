@@ -10,6 +10,7 @@ from .. import BaseTest
 
 from nydus.db.backends.redis import Redis
 from nydus.db import Cluster
+import redis
 
 class RedisTest(BaseTest):
     def setUp(self):
@@ -24,3 +25,6 @@ class RedisTest(BaseTest):
             hosts={0: self.redis},
         )
         self.assertEquals(p.incr('RedisTest_with_cluster'), 1)
+
+    def test_provides_retryable_exceptions(self):
+        self.assertEquals(Redis.retryable_exceptions, redis.exceptions)

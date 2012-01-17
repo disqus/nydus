@@ -13,6 +13,8 @@ class BaseRouter(object):
     # def __init__(self):
     #     pass
 
+    retryable = False
+
     def get_db(self, cluster, func, *args, **kwargs):
         """Return the first entry in the cluster"""
         return range(len(cluster))

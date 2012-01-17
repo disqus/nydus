@@ -9,10 +9,15 @@ nydus.db.backends.redis
 from __future__ import absolute_import
 
 from redis import Redis as RedisClient
+from redis import exceptions as client_exceptions
 
 from nydus.db.backends import BaseConnection
 
 class Redis(BaseConnection):
+
+    # Exceptions that can be retried by this backend
+    retryable_exceptions = client_exceptions
+
     def __init__(self, host='localhost', port=6379, db=0, timeout=None, **options):
         self.host = host
         self.port = port

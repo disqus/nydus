@@ -60,10 +60,12 @@ class Cluster(object):
     """
     Holds a cluster of connections.
     """
-    def __init__(self, hosts, router=None):
+
+    def __init__(self, hosts, router=None, max_connection_retries=20):
         self.hosts = hosts
         self.router = router
-    
+        self.max_connection_retries = max_connection_retries
+
     def __len__(self):
         return len(self.hosts)
 
@@ -77,18 +79,20 @@ class Cluster(object):
             return CallProxy(self, attr)
 
     def _execute(self, attr, args, kwargs):
-        if self.router:
-            db_nums = self.router.get_db(self, attr, *args, **kwargs)
+        if self.router and self.router.retryable:
+            # The router supports retryable commands, so we want to run a
+            # separate algorithm for how we get connections to run commands on
+            # and then possibly retry
+            self._retryable_execute(attr, *args, **kwargs)
         else:
-            db_nums = range(len(self))
+            connections = self._connections_for(*args, **kwargs)
+            results = [getattr(conn, attr)(*args, **kwargs) for conn in connections]
 
-        results = [getattr(self.hosts[num], attr)(*args, **kwargs) for num in db_nums]
-
-        # If we only had one db to query, we simply return that res
-        if len(results) == 1:
-            return results[0]
-
-        return results
+            # If we only had one db to query, we simply return that res
+            if len(results) == 1:
+                return results[0]
+            else:
+                return results
 
     def disconnect(self):
         """Disconnects all connections in cluster"""
@@ -103,17 +107,45 @@ class Cluster(object):
         during all steps of the process. An example of this would be
         Redis pipelines.
         """
-        if self.router:
-            db_nums = self.router.get_db(self, 'get_conn', *args, **kwargs)
+        connections = self._connections_for(*args, **kwargs)
+
+        if len(connections) is 1:
+            return connections[0]
         else:
-            db_nums = range(len(self))
-        
-        if len(db_nums) == 1:
-            return self[db_nums[0]]
-        return [self[n] for n in db_nums]
+            return connections
 
     def map(self, workers=None):
         return DistributedContextManager(self, workers)
+
+    def _retryable_execute(self, attr, *args, **kwargs):
+        db_nums = self._db_nums_for(*args, **kwargs)
+        retries = 0
+
+        while db_nums and retries <= self.max_connection_retries:
+            if len(db_nums) > 1:
+                raise Exception('Retryable execute only supported by routers which return 1 DB')
+            else:
+                connection = self[db_nums[0]]
+
+            try:
+                return getattr(connection, attr)(*args, **kwargs)
+            except tuple(connection.retryable_exceptions):
+                # We had a failure, so get a new db_num and try again, noting
+                # the DB number that just failed, so the backend can mark it as
+                # down
+                db_nums = self._db_nums_for(retry_for=db_nums[0], *args, **kwargs)
+                retries += 1
+        else:
+            raise Exception('Maximum amount of connection retries exceeded')
+
+    def _db_nums_for(self, *args, **kwargs):
+        if self.router:
+            return self.router.get_db(self, 'get_conn', *args, **kwargs)
+        else:
+            return range(len(self))
+
+    def _connections_for(self, *args, **kwargs):
+        return [self[n] for n in self._db_nums_for(*args, **kwargs)]
 
 class CallProxy(object):
     """

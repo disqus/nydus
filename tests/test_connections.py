@@ -133,3 +133,69 @@ class ClusterTest(BaseTest):
 
         self.assertEquals(foo, ['foo', 'bar'])
         self.assertEquals(bar, ['foo', 'bar'])
+
+
+class FlakeyConnection(DummyConnection):
+
+    retryable_exceptions = [Exception]
+
+    def foo(self):
+        if hasattr(self, 'already_failed'):
+            super(FlakeyConnection, self).foo()
+        else:
+            self.already_failed = True
+            raise Exception('boom!')
+
+
+class RetryableRouter(DummyRouter):
+    retryable = True
+
+    def __init__(self):
+        self.kwargs_seen = []
+        super(RetryableRouter, self).__init__()
+
+    def get_db(self, cluster, func, key=None, *args, **kwargs):
+        self.kwargs_seen.append(kwargs)
+        return [0]
+
+
+class ImposterRouter(DummyRouter):
+    retryable = True
+
+    def get_db(self, cluster, func, key=None, *args, **kwargs):
+        return range(5)
+
+
+class ScumbagConnection(DummyConnection):
+
+    retryable_exceptions = [Exception]
+
+    def foo(self):
+        raise Exception("Says it's a connection / Never actually connects.")
+
+
+class RetryClusterTest(BaseTest):
+
+    def build_cluster(self, connection=FlakeyConnection, router=RetryableRouter):
+        return create_cluster({
+            'engine': connection,
+            'router': router,
+            'hosts': {
+                0: {'resp': 'bar'},
+            }
+        })
+
+    def test_retry_router_when_receives_error(self):
+        cluster = self.build_cluster()
+
+        cluster.foo()
+        self.assertEquals({'retry_for': 0}, cluster.router.kwargs_seen.pop())
+
+    def test_protection_from_infinate_loops(self):
+        cluster = self.build_cluster(connection=ScumbagConnection)
+        self.assertRaises(Exception, cluster.foo)
+
+    def test_retryable_router_returning_multiple_dbs_raises_ecxeption(self):
+        cluster = self.build_cluster(router=ImposterRouter)
+        self.assertRaisesRegexp(Exception, 'only supported by routers',
+                                cluster.foo)
