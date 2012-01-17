@@ -1,1 +1,3 @@
 http://github.com/disqus/nydus/contributors
+
+Ketama consistent hash algorithm for python written by Andrey Nikishaev: https://github.com/creotiv/PyKetama
