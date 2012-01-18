@@ -16,11 +16,11 @@ install_requires = [
 
 setup(
     name='nydus',
-    version='0.1.2',
+    version='0.2.0',
     author='David Cramer',
     author_email='dcramer@gmail.com',
     url='http://github.com/disqus/nydus',
-    description = 'Connection utilities',
+    description='Connection utilities',
     packages=find_packages(exclude=('tests',)),
     zip_safe=False,
     install_requires=install_requires,
