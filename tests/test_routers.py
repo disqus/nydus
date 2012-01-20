@@ -8,13 +8,21 @@ tests.test_routers
 
 from . import BaseTest
 from nydus.db import Cluster
+from nydus.db.backends import BaseConnection
 from nydus.db.routers.redis import ConsistentHashingRouter
 from nose import tools
 
 
-class DummyConnection(object):
+class DummyConnection(BaseConnection):
     def __init__(self, i):
-        self.host = 'host-' + str(i)
+        self.host = 'dummyhost'
+        self.i = i
+        super(DummyConnection, self).__init__(i)
+
+    @property
+    def identifier(self):
+        return "%s:%s" % (self.host, self.i)
+
 
 class ConsistentHashingRouterTest(BaseTest):
 
@@ -57,36 +65,32 @@ class HashingTest(ConsistentHashingRouterTest):
         tools.assert_items_equal(['only_key'], self.get_db())
 
     def test_multi_node_cluster_returns_correct_host(self):
-        # This value "2" below is magic due to the halshing algo
-        tools.assert_items_equal([1], self.get_db())
+        tools.assert_items_equal([2], self.get_db())
 
 class RetryableTest(HashingTest):
-
-    def test_is_retryable(self):
-        tools.ok_(self.router.retryable)
 
     def test_attempt_reconnect_threshold_is_set(self):
         tools.assert_equal(self.router.attempt_reconnect_threshold, 100000)
 
     def test_retry_gives_next_host_if_primary_is_offline(self):
-        tools.assert_items_equal([1], self.get_db())
-        tools.assert_items_equal([0], self.get_db(retry_for=1))
+        tools.assert_items_equal([2], self.get_db())
+        tools.assert_items_equal([4], self.get_db(retry_for=2))
 
     def test_retry_host_change_is_sticky(self):
-        tools.assert_items_equal([1], self.get_db())
-        tools.assert_items_equal([0], self.get_db(retry_for=1))
+        tools.assert_items_equal([2], self.get_db())
+        tools.assert_items_equal([4], self.get_db(retry_for=2))
 
-        tools.assert_items_equal([0], self.get_db())
+        tools.assert_items_equal([4], self.get_db())
 
     def test_adds_back_down_host_once_attempt_reconnect_threshold_is_passed(self):
         ConsistentHashingRouter.attempt_reconnect_threshold = 3
 
-        tools.assert_items_equal([1], self.get_db())
-        tools.assert_items_equal([0], self.get_db(retry_for=1))
-        tools.assert_items_equal([0], self.get_db())
+        tools.assert_items_equal([2], self.get_db())
+        tools.assert_items_equal([4], self.get_db(retry_for=2))
+        tools.assert_items_equal([4], self.get_db())
 
         # Router should add host 1 back to the pool now
-        tools.assert_items_equal([1], self.get_db())
+        tools.assert_items_equal([2], self.get_db())
 
         ConsistentHashingRouter.attempt_reconnect_threshold = 100000
 

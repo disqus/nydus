@@ -20,8 +20,9 @@ class BaseConnection(object):
         self._connection = None
         self.num = num
 
-    def __repr__(self):
-        return '<%s: num=%s>' % (self.__class__.__name__, self.num)
+    @property
+    def identifier(self):
+        return repr(self)
 
     @property
     def connection(self):

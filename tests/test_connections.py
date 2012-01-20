@@ -139,7 +139,7 @@ class FlakeyConnection(DummyConnection):
 
     retryable_exceptions = [Exception]
 
-    def foo(self):
+    def foo(self, *args, **kwargs):
         if hasattr(self, 'already_failed'):
             super(FlakeyConnection, self).foo()
         else:
@@ -152,18 +152,28 @@ class RetryableRouter(DummyRouter):
 
     def __init__(self):
         self.kwargs_seen = []
+        self.key_args_seen = []
         super(RetryableRouter, self).__init__()
 
     def get_db(self, cluster, func, key=None, *args, **kwargs):
         self.kwargs_seen.append(kwargs)
+        self.key_args_seen.append(key)
         return [0]
 
 
-class ImposterRouter(DummyRouter):
+class InconsistentRouter(DummyRouter):
     retryable = True
 
+    def __init__(self):
+        self.returned = False
+        super(InconsistentRouter, self).__init__()
+
     def get_db(self, cluster, func, key=None, *args, **kwargs):
-        return range(5)
+        if self.returned:
+            return range(5)
+        else:
+            self.returned = True
+            return [0]
 
 
 class ScumbagConnection(DummyConnection):
@@ -196,6 +206,6 @@ class RetryClusterTest(BaseTest):
         self.assertRaises(Exception, cluster.foo)
 
     def test_retryable_router_returning_multiple_dbs_raises_ecxeption(self):
-        cluster = self.build_cluster(router=ImposterRouter)
-        self.assertRaisesRegexp(Exception, 'only supported by routers',
+        cluster = self.build_cluster(router=InconsistentRouter, connection=ScumbagConnection)
+        self.assertRaisesRegexp(Exception, 'returned multiple DBs',
                                 cluster.foo)

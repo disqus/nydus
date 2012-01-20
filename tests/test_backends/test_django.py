@@ -79,6 +79,12 @@ class DjangoSQLiteTest(BaseTest):
         cursor = p.execute('SELECT 1')
         self.assertEquals(cursor.fetchone(), (1,))
 
+    def test_provides_identififer(self):
+        self.assertEqual(
+            "django.db.backends.sqlite3NAME=:memory: PORT=None HOST=None USER=None TEST_NAME=None PASSWORD=None OPTIONS={}",
+            self.db.identifier
+        )
+
 # class DjangoPsycopg2Test(BaseTest):
 #     def setUp(self):
 #         from django.db.backends import postgresql_psycopg2

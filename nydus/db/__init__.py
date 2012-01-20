@@ -79,11 +79,13 @@ class Cluster(object):
             return CallProxy(self, attr)
 
     def _execute(self, attr, args, kwargs):
-        if self.router and self.router.retryable:
+        db_nums = self._db_nums_for(*args, **kwargs)
+
+        if self.router and len(db_nums) is 1 and self.router.retryable:
             # The router supports retryable commands, so we want to run a
             # separate algorithm for how we get connections to run commands on
             # and then possibly retry
-            self._retryable_execute(attr, *args, **kwargs)
+            self._retryable_execute(db_nums, attr, *args, **kwargs)
         else:
             connections = self._connections_for(*args, **kwargs)
             results = [getattr(conn, attr)(*args, **kwargs) for conn in connections]
@@ -117,13 +119,12 @@ class Cluster(object):
     def map(self, workers=None):
         return DistributedContextManager(self, workers)
 
-    def _retryable_execute(self, attr, *args, **kwargs):
-        db_nums = self._db_nums_for(*args, **kwargs)
+    def _retryable_execute(self, db_nums, attr, *args, **kwargs):
         retries = 0
 
-        while db_nums and retries <= self.max_connection_retries:
+        while retries <= self.max_connection_retries:
             if len(db_nums) > 1:
-                raise Exception('Retryable execute only supported by routers which return 1 DB')
+                raise Exception('Retryable router returned multiple DBs')
             else:
                 connection = self[db_nums[0]]
 
