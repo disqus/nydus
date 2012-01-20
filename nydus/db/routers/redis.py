@@ -21,6 +21,11 @@ class PartitionRouter(BaseRouter):
 
 
 class ConsistentHashingRouter(BaseRouter):
+    '''
+    Router that returns host number based on a consistent hashing algorithm.
+    The consistent hashing algorithm only works if a key argument is provided.
+    If a key is not provided, then all hosts are returned.
+    '''
 
     # Raised if all hosts in the hash have been marked as down
     class HostListExhaused(Exception):
@@ -40,7 +45,7 @@ class ConsistentHashingRouter(BaseRouter):
 
     # There is one instance of this class that lives inside the Cluster object
     def get_db(self, cluster, func, key=None, *args, **kwargs):
-        self._setup_hash_and_connections(cluster, func, key=None, *args, **kwargs)
+        self._setup_hash_and_connections(cluster, *args, **kwargs)
 
         if not cluster:
             return []
@@ -51,15 +56,15 @@ class ConsistentHashingRouter(BaseRouter):
 
     def flush_down_connections(self):
         for connection in self._down_connections:
-            self._hash.add_node(connection.host)
+            self._hash.add_node(connection.identifier)
 
         self._down_connections = set()
 
-    def _setup_hash_and_connections(self, cluster, func, key=None, *args, **kwargs):
+    def _setup_hash_and_connections(self, cluster, *args, **kwargs):
         # Create the hash if it doesn't exist yet
         if not hasattr(self, '_hash'):
-            hostnames = [h.host for (i, h) in cluster.hosts.items()]
-            self._hash = Ketama(hostnames)
+            strings = [h.identifier for (i, h) in cluster.hosts.items()]
+            self._hash = Ketama(strings)
 
         self._handle_host_retries(cluster, retry_for=kwargs.get('retry_for'))
 
@@ -74,14 +79,14 @@ class ConsistentHashingRouter(BaseRouter):
             self._mark_connection_as_down(cluster[retry_for])
 
     def _mark_connection_as_down(self, connection):
-        self._hash.remove_node(connection.host)
+        self._hash.remove_node(connection.identifier)
         self._down_connections.add(connection)
 
     def _host_indexes_for(self, key, cluster):
-        found_hostname = self._hash.get_node(key)
+        found = self._hash.get_node(key)
 
-        if not found_hostname and len(self._down_connections) > 0:
+        if not found and len(self._down_connections) > 0:
             raise self.HostListExhaused
 
         return [i for (i, h) in cluster.hosts.items()
-                if h.host is found_hostname]
+                if h.identifier == found]

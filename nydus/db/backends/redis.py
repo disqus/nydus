@@ -25,6 +25,12 @@ class Redis(BaseConnection):
         self.timeout = timeout
         super(Redis, self).__init__(**options)
 
+    @property
+    def identifier(self):
+        mapping = vars(self)
+        mapping['klass'] = self.__class__.__name__
+        return "redis://%(host)s:%(port)s/%(db)s" % mapping
+
     def connect(self):
         return RedisClient(host=self.host, port=self.port, db=self.db, socket_timeout=self.timeout)
 

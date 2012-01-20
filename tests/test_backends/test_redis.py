@@ -28,3 +28,6 @@ class RedisTest(BaseTest):
 
     def test_provides_retryable_exceptions(self):
         self.assertEquals(Redis.retryable_exceptions, redis.exceptions)
+
+    def test_provides_identifier(self):
+        self.assertEquals(self.redis.identifier, str(self.redis.identifier))

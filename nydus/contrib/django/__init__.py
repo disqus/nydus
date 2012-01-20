@@ -52,3 +52,8 @@ class DjangoDatabase(BaseConnection):
         else:
             # Send to router
             return getattr(self.connection, attr)
+
+    @property
+    def identifier(self):
+        settings = ["%s=%s" % i for i in self.settings_dict.items()]
+        return self.backend.__name__ + ' '.join(settings)
