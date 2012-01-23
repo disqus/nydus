@@ -1,7 +1,0 @@
-{
-  "project_id" : "nydus",
-  "conduit_uri" : "http://phabricator.local.disqus.net/",
-  "lint_engine" : "ComprehensiveLintEngine",
-  "copyright_holder": "Disqus, Inc.",
-  "immutable_history": false
-}
