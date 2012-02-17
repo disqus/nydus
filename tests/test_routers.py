@@ -10,6 +10,7 @@ from . import BaseTest
 from nydus.db import Cluster
 from nydus.db.backends import BaseConnection
 from nydus.db.routers.redis import ConsistentHashingRouter
+from nydus.db.routers.redis import RoundRobinRouter
 from nose import tools
 
 
@@ -24,6 +25,18 @@ class DummyConnection(BaseConnection):
         return "%s:%s" % (self.host, self.i)
 
 
+class RoundRobinRouterTest(BaseTest):
+
+    def setUp(self):
+        self.router = RoundRobinRouter()
+        self.hosts = dict((i, DummyConnection(i)) for i in range(5))
+        self.cluster = Cluster(router=self.router, hosts=self.hosts)
+
+    def get_db(self, *args, **kwargs):
+        kwargs.setdefault('cluster', self.cluster)
+        return self.router.get_db(*args, **kwargs)
+
+
 class ConsistentHashingRouterTest(BaseTest):
 
     def setUp(self):
@@ -34,6 +47,25 @@ class ConsistentHashingRouterTest(BaseTest):
     def get_db(self, **kwargs):
         kwargs.setdefault('cluster', self.cluster)
         return self.router.get_db(func='info', **kwargs)
+
+
+class RoundRobinTest(RoundRobinRouterTest):
+
+    def get_db(self, **kwargs):
+        kwargs['key'] = 'foo'
+        return super(RoundRobinTest, self).get_db(**kwargs)
+
+    def test_cluster_of_zero_returns_zero(self):
+        self.cluster.hosts = dict()
+        tools.assert_items_equal([], self.get_db())
+
+    def test_cluster_of_one_returns_one(self):
+        self.cluster.hosts = {0: DummyConnection('foo')}
+        tools.assert_items_equal([0], [self.get_db(), ])
+
+    def test_multi_node_cluster_returns_correct_host(self):
+        self.cluster.hosts = {0: DummyConnection('foo'), 1: DummyConnection('bar')}
+        tools.assert_items_equal([0, 1, 0, 1], [self.get_db(), self.get_db(), self.get_db(), self.get_db(), ])
 
 
 class InterfaceTest(ConsistentHashingRouterTest):
@@ -49,6 +81,7 @@ class InterfaceTest(ConsistentHashingRouterTest):
 
     def test_returns_sequence_with_one_item_when_given_key(self):
         tools.ok_(len(self.get_db(key='foo')) is 1)
+
 
 class HashingTest(ConsistentHashingRouterTest):
 
@@ -66,6 +99,7 @@ class HashingTest(ConsistentHashingRouterTest):
 
     def test_multi_node_cluster_returns_correct_host(self):
         tools.assert_items_equal([2], self.get_db())
+
 
 class RetryableTest(HashingTest):
 
