@@ -66,11 +66,11 @@ class RoundRobinTest(BaseTest):
 
     def test_cluster_of_one_returns_one(self):
         self.cluster.hosts = {0: DummyConnection('foo')}
-        tools.assert_items_equal([0], [self.get_db(), ])
+        tools.assert_items_equal([0], self.get_db())
 
     def test_multi_node_cluster_returns_correct_host(self):
         self.cluster.hosts = {0: DummyConnection('foo'), 1: DummyConnection('bar')}
-        tools.assert_items_equal([0, 1, 0, 1], [self.get_db(), self.get_db(), self.get_db(), self.get_db(), ])
+        tools.assert_items_equal([[0], [1], [0], [1]], [self.get_db(), self.get_db(), self.get_db(), self.get_db(), ])
 
 
 class InterfaceTest(ConsistentHashingRouterTest):
