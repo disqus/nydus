@@ -16,6 +16,9 @@ class BaseRouter(object):
     retryable = False
 
     def get_db(self, cluster, func, *args, **kwargs):
-        """Return the first entry in the cluster"""
+        """
+        Return the first entry in the cluster
+        The return value must be iterable
+        """
         return range(len(cluster))
 
