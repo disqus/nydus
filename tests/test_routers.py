@@ -49,11 +49,16 @@ class ConsistentHashingRouterTest(BaseTest):
         return self.router.get_db(func='info', **kwargs)
 
 
-class RoundRobinTest(RoundRobinRouterTest):
+class RoundRobinTest(BaseTest):
 
-    def get_db(self, **kwargs):
-        kwargs['key'] = 'foo'
-        return super(RoundRobinTest, self).get_db(**kwargs)
+    def setUp(self):
+        self.router = RoundRobinRouter()
+        self.hosts = dict((i, DummyConnection(i)) for i in range(5))
+        self.cluster = Cluster(router=self.router, hosts=self.hosts)
+
+    def get_db(self, *args, **kwargs):
+        kwargs.setdefault('cluster', self.cluster)
+        return self.router.get_db(*args, **kwargs)
 
     def test_cluster_of_zero_returns_zero(self):
         self.cluster.hosts = dict()
