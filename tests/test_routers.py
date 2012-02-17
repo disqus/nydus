@@ -11,7 +11,6 @@ from nydus.db import Cluster
 from nydus.db.backends import BaseConnection
 from nydus.db.routers.redis import ConsistentHashingRouter
 from nydus.db.routers.redis import RoundRobinRouter
-from nose import tools
 
 
 class DummyConnection(BaseConnection):
@@ -62,30 +61,30 @@ class RoundRobinTest(BaseTest):
 
     def test_cluster_of_zero_returns_zero(self):
         self.cluster.hosts = dict()
-        tools.assert_items_equal([], self.get_db())
+        self.assertEquals([], self.get_db())
 
     def test_cluster_of_one_returns_one(self):
         self.cluster.hosts = {0: DummyConnection('foo')}
-        tools.assert_items_equal([0], [self.get_db(), ])
+        self.assertEquals([0], [self.get_db(), ])
 
     def test_multi_node_cluster_returns_correct_host(self):
         self.cluster.hosts = {0: DummyConnection('foo'), 1: DummyConnection('bar')}
-        tools.assert_items_equal([0, 1, 0, 1], [self.get_db(), self.get_db(), self.get_db(), self.get_db(), ])
+        self.assertEquals([0, 1, 0, 1], [self.get_db(), self.get_db(), self.get_db(), self.get_db(), ])
 
 
 class InterfaceTest(ConsistentHashingRouterTest):
 
     def test_offers_router_interface(self):
-        tools.assert_true(callable(self.router.get_db))
+        self.assertTrue(callable(self.router.get_db))
 
     def test_get_db_returns_itereable(self):
         iter(self.get_db())
 
     def test_returns_whole_cluster_without_key(self):
-        tools.assert_items_equal(range(5), self.get_db())
+        self.assertEquals(range(5), self.get_db())
 
     def test_returns_sequence_with_one_item_when_given_key(self):
-        tools.ok_(len(self.get_db(key='foo')) is 1)
+        self.assert_(len(self.get_db(key='foo')) is 1)
 
 
 class HashingTest(ConsistentHashingRouterTest):
@@ -96,40 +95,40 @@ class HashingTest(ConsistentHashingRouterTest):
 
     def test_cluster_of_zero_returns_zero(self):
         self.cluster.hosts = dict()
-        tools.assert_items_equal([], self.get_db())
+        self.assertEquals([], self.get_db())
 
     def test_cluster_of_one_returns_one(self):
         self.cluster.hosts = dict(only_key=DummyConnection('foo'))
-        tools.assert_items_equal(['only_key'], self.get_db())
+        self.assertEquals(['only_key'], self.get_db())
 
     def test_multi_node_cluster_returns_correct_host(self):
-        tools.assert_items_equal([2], self.get_db())
+        self.assertEquals([2], self.get_db())
 
 
 class RetryableTest(HashingTest):
 
     def test_attempt_reconnect_threshold_is_set(self):
-        tools.assert_equal(self.router.attempt_reconnect_threshold, 100000)
+        self.assertEqual(self.router.attempt_reconnect_threshold, 100000)
 
     def test_retry_gives_next_host_if_primary_is_offline(self):
-        tools.assert_items_equal([2], self.get_db())
-        tools.assert_items_equal([4], self.get_db(retry_for=2))
+        self.assertEquals([2], self.get_db())
+        self.assertEquals([4], self.get_db(retry_for=2))
 
     def test_retry_host_change_is_sticky(self):
-        tools.assert_items_equal([2], self.get_db())
-        tools.assert_items_equal([4], self.get_db(retry_for=2))
+        self.assertEquals([2], self.get_db())
+        self.assertEquals([4], self.get_db(retry_for=2))
 
-        tools.assert_items_equal([4], self.get_db())
+        self.assertEquals([4], self.get_db())
 
     def test_adds_back_down_host_once_attempt_reconnect_threshold_is_passed(self):
         ConsistentHashingRouter.attempt_reconnect_threshold = 3
 
-        tools.assert_items_equal([2], self.get_db())
-        tools.assert_items_equal([4], self.get_db(retry_for=2))
-        tools.assert_items_equal([4], self.get_db())
+        self.assertEquals([2], self.get_db())
+        self.assertEquals([4], self.get_db(retry_for=2))
+        self.assertEquals([4], self.get_db())
 
         # Router should add host 1 back to the pool now
-        tools.assert_items_equal([2], self.get_db())
+        self.assertEquals([2], self.get_db())
 
         ConsistentHashingRouter.attempt_reconnect_threshold = 100000
 
@@ -138,6 +137,6 @@ class RetryableTest(HashingTest):
         [self.get_db(retry_for=i) for i in range(4)]
 
         # And the 5th should raise an error
-        tools.assert_raises(
+        self.assertRaises(
             ConsistentHashingRouter.HostListExhaused,
             self.get_db, **dict(retry_for=4))
