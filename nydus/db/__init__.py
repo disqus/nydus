@@ -45,7 +45,7 @@ def create_cluster(settings):
         router = router()
     else:
         router = BaseRouter()
-        
+
     # Build the connection cluster
     return Cluster(
         router=router,
@@ -155,7 +155,7 @@ class CallProxy(object):
     def __init__(self, cluster, attr):
         self._cluster = cluster
         self._attr = attr
-    
+
     def __call__(self, *args, **kwargs):
         return self._cluster._execute(self._attr, args, kwargs)
 
@@ -174,7 +174,7 @@ class EventualCommand(object):
             '_kwargs': {},
             '_ident': None,
         })
-        
+
     def __call__(self, *args, **kwargs):
         self.__dict__.update({
             '_args': args,
@@ -277,9 +277,9 @@ class DistributedConnection(object):
             if len(result) == 1:
                 result = result[0]
             command._wrapped = result
-    
+
         self._complete = True
-    
+
     def get_results(self):
         assert self._complete, 'you must execute the commands before fetching results'
 
@@ -306,7 +306,7 @@ class LazyConnectionHandler(dict):
         self.conf_callback = conf_callback
         self.conf_settings = {}
         self._is_ready = False
-    
+
     def __getitem__(self, key):
         if not self.is_ready():
             self.reload()
@@ -325,7 +325,7 @@ class LazyConnectionHandler(dict):
 
     def reload(self):
         for conn_alias, conn_settings in self.conf_callback().iteritems():
-            self[conn_alias] = create_cluster(conn_settings)        
+            self[conn_alias] = create_cluster(conn_settings)
         self._is_ready = True
 
     def disconnect(self):
