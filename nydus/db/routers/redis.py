@@ -33,7 +33,7 @@ class RoundRobinRouter(BaseRouter):
             return []
         if not hasattr(self, 'cycler'):
             self.cycler = self._get_db__round_robin(cluster)
-        return self.cycler.next()
+        return [self.cycler.next()]
 
 
 class ConsistentHashingRouter(BaseRouter):
