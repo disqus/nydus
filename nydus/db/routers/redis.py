@@ -7,6 +7,7 @@ nydus.db.routers.redis
 """
 
 from binascii import crc32
+from itertools import cycle
 
 from nydus.db.routers import BaseRouter
 from nydus.contrib.ketama import Ketama
@@ -16,8 +17,23 @@ class PartitionRouter(BaseRouter):
     def get_db(self, cluster, func, key=None, *args, **kwargs):
         # Assume first argument is a key
         if not key:
-           return range(len(cluster))
+            return range(len(cluster))
         return [crc32(str(key)) % len(cluster)]
+
+
+class RoundRobinRouter(BaseRouter):
+
+    def _get_db__round_robin(self, cluster):
+        c = cycle(range(len(cluster)))
+        for x in c:
+            yield x
+
+    def get_db(self, cluster, *args, **kwargs):
+        if not cluster:
+            return []
+        if not hasattr(self, 'cycler'):
+            self.cycler = self._get_db__round_robin(cluster)
+        return self.cycler.next()
 
 
 class ConsistentHashingRouter(BaseRouter):
