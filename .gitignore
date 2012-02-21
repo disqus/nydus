@@ -6,4 +6,3 @@
 *.egg
 .arcconfig
 contrib
-conf.py
