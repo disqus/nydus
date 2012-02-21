@@ -5,3 +5,5 @@
 *.gz
 *.egg
 .arcconfig
+contrib
+conf.py
