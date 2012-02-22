@@ -48,6 +48,14 @@ class RedisTest(BaseTest):
         self.assertEqual(range(len(chars)), [int(r._wrapped) for r in res])
 
     @mock.patch('nydus.db.backends.redis.RedisClient')
+    def test_client_instantiates_with_kwargs(self, RedisClient):
+        client = Redis(num=0)
+        client.connect()
+
+        self.assertEquals(RedisClient.call_count, 1)
+        RedisClient.assert_any_call(host='localhost', port=6379, db=0, socket_timeout=None)
+
+    @mock.patch('nydus.db.backends.redis.RedisClient')
     def test_map_does_pipeline(self, RedisClient):
         redis = create_cluster({
             'engine': 'nydus.db.backends.redis.Redis',
@@ -57,13 +65,9 @@ class RedisTest(BaseTest):
                 1: {'db': 1},
             }
         })
-        chars = ('a', 'b')
         with redis.map() as conn:
-            [conn.set(c, i) for i, c in enumerate(chars)]
-
-        self.assertEquals(RedisClient.call_count, 2)
-        RedisClient.assert_any_call(host='localhost', port=6379, db=0, socket_timeout=None)
-        RedisClient.assert_any_call(host='localhost', port=6379, db=1, socket_timeout=None)
+            conn.set('a', 0)
+            conn.set('d', 1)
 
         # ensure this was actually called through the pipeline
         self.assertFalse(RedisClient().set.called)
@@ -73,7 +77,34 @@ class RedisTest(BaseTest):
 
         self.assertEquals(RedisClient().pipeline().set.call_count, 2)
         RedisClient().pipeline().set.assert_any_call('a', 0)
-        RedisClient().pipeline().set.assert_any_call('b', 1)
+        RedisClient().pipeline().set.assert_any_call('d', 1)
 
         self.assertEquals(RedisClient().pipeline().execute.call_count, 2)
+        RedisClient().pipeline().execute.assert_called_with()
+
+    @mock.patch('nydus.db.backends.redis.RedisClient')
+    def test_map_only_runs_on_required_nodes(self, RedisClient):
+        redis = create_cluster({
+            'engine': 'nydus.db.backends.redis.Redis',
+            'router': 'nydus.db.routers.redis.PartitionRouter',
+            'hosts': {
+                0: {'db': 0},
+                1: {'db': 1},
+            }
+        })
+        with redis.map() as conn:
+            conn.set('a', 0)
+            conn.set('b', 1)
+
+        # ensure this was actually called through the pipeline
+        self.assertFalse(RedisClient().set.called)
+
+        self.assertEquals(RedisClient().pipeline.call_count, 1)
+        RedisClient().pipeline.assert_called_with()
+
+        self.assertEquals(RedisClient().pipeline().set.call_count, 2)
+        RedisClient().pipeline().set.assert_any_call('a', 0)
+        RedisClient().pipeline().set.assert_any_call('b', 1)
+
+        self.assertEquals(RedisClient().pipeline().execute.call_count, 1)
         RedisClient().pipeline().execute.assert_called_with()

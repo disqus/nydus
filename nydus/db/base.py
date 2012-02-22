@@ -270,8 +270,7 @@ class DistributedConnection(object):
         if pipelined:
             pipe_command_map = defaultdict(list)
 
-            # Build up a collection of pipes
-            pipes = dict((n, self._cluster[n].get_pipeline()) for n in self._cluster)
+            pipes = dict()  # db -> pipeline
 
         # build up a list of pending commands and their routing information
         for command in self._commands:
@@ -307,6 +306,9 @@ class DistributedConnection(object):
 
         # execute our pending commands either in the pool, or using a pipeline
         for db_num, command_list in pending_commands.iteritems():
+            print db_num, command_list
+            if pipelined:
+                pipes[db_num] = self._cluster[db_num].get_pipeline()
             for command in command_list:
                 if pipelined:
                     # add to pipeline
