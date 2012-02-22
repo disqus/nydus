@@ -9,6 +9,27 @@ nydus.db.backends.base
 __all__ = ('BaseConnection',)
 
 
+class BasePipeline(object):
+    """
+    Base Pipeline class.
+
+    This basically is absolutely useless, and just provides a sample
+    API for dealing with pipelined commands.
+    """
+    def __init__(self, connection):
+        self.pending = []
+        self.connection = connection
+
+    def add(self, command):
+        self.pending.append(command)
+
+    def execute(self):
+        results = {}
+        for command in self.pending:
+            results[command._ident] = command(*command._args, **command._kwargs)
+        return results
+
+
 class BaseConnection(object):
     """
     Base connection class.
@@ -18,6 +39,7 @@ class BaseConnection(object):
     """
 
     retryable_exceptions = ()
+    supports_pipelines = False
 
     def __init__(self, num, **options):
         self._connection = None
@@ -43,3 +65,6 @@ class BaseConnection(object):
 
     def disconnect(self):
         raise NotImplementedError
+
+    def get_pipeline(self):
+        return BasePipeline(self)

@@ -71,6 +71,10 @@ class Cluster(object):
         else:
             return CallProxy(self, attr)
 
+    def __iter__(self):
+        for name in self.hosts.iterkeys():
+            yield name
+
     def _execute(self, attr, args, kwargs):
         db_nums = self._db_nums_for(*args, **kwargs)
 
@@ -111,10 +115,6 @@ class Cluster(object):
 
     def map(self, workers=None):
         return DistributedContextManager(self, workers)
-
-    def pipelined_map(self, workers=None):
-        # TODO should only be supported by dbs that support pipelining
-        return DistributedPipelinedContextManager(self, workers)
 
     def _retryable_execute(self, db_nums, attr, *args, **kwargs):
         retries = 0
@@ -161,6 +161,7 @@ class CallProxy(object):
 class EventualCommand(object):
     _attr = None
     _wrapped = None
+    _evaled = False
 
     # introspection support:
     __members__ = property(lambda self: self.__dir__())
@@ -169,6 +170,7 @@ class EventualCommand(object):
         self.__dict__.update({
             '_attr': attr,
             '_wrapped': None,
+            '_evaled': False,
             '_args': [],
             '_kwargs': {},
             '_ident': None,
@@ -183,7 +185,9 @@ class EventualCommand(object):
         return self
 
     def __repr__(self):
-        return repr(self._wrapped)
+        if self._evaled:
+            return repr(self._wrapped)
+        return u'<EventualCommand: %s args=%s kwargs=%s>' % (self._attr, self._args, self._kwargs)
 
     def __getattr__(self, name):
         if name in self.__dict__:
@@ -228,6 +232,10 @@ class EventualCommand(object):
     def __hash__(self):
         return hash(self._wrapped)
 
+    def _set_value(self, value):
+        self._wrapped = value
+        self._evaled = True
+
 
 class DistributedConnection(object):
     def __init__(self, cluster, workers=None):
@@ -247,95 +255,88 @@ class DistributedConnection(object):
     def _execute(self):
         num_commands = len(self._commands)
         if num_commands == 0:
-            self._results = []
+            self._commands = []
             return
 
         pool = None
+        command_map = {}
+        pipelined = all(self._cluster[n].supports_pipelines for n in self._cluster)
+        pending_commands = defaultdict(list)
 
+        # used in pipelining
+        if pipelined:
+            pipe_command_map = defaultdict(list)
+
+            # Build up a collection of pipes
+            pipes = dict((n, self._cluster[n].get_pipeline()) for n in self._cluster)
+
+        # build up a list of pending commands and their routing information
         for command in self._commands:
+            cmd_ident = command._ident
+            cmd_attr = command._attr
+            cmd_args = command._args
+            cmd_kwargs = command._kwargs
+
+            command_map[cmd_ident] = command
+
             if self._cluster.router:
-                db_nums = self._cluster.router.get_db(self._cluster, command._attr, *command._args, **command._kwargs)
+                db_nums = self._cluster.router.get_db(self._cluster, cmd_attr, *cmd_args, **cmd_kwargs)
             else:
                 db_nums = range(len(self._cluster))
 
+            # The number of commands is based on the total number of executable commands
             num_commands += len(db_nums)
 
-            # Don't bother with the ThreadPool if we only need to do one operation
+            # Don't bother with the pooling if we only need to do one operation on a single machine
             if num_commands == 1:
-                self._results = [getattr(self._cluster[db_num], command._attr)(*command._args, **command._kwargs) for db_num in db_nums]
+                self._commands = [getattr(self._cluster[n], cmd_attr)(*cmd_args, **cmd_kwargs) for n in n]
                 return
 
-            elif not pool:
+            # Create the threadpool and pipe jobs into it
+            if not pool:
                 pool = ThreadPool(self._workers)
 
-            for db_num in db_nums:
-                pool.add(command._ident, getattr(self._cluster[db_num], command._attr), command._args, command._kwargs)
-
-        result_map = pool.join()
-        for command in self._commands:
-            result = result_map[command._ident]
-            if len(result) == 1:
-                result = result[0]
-            command._wrapped = result
-
-        self._complete = True
-
-    def get_results(self):
-        assert self._complete, 'you must execute the commands before fetching results'
-
-        return self._commands
-
-
-class DistributedPipelineConnection(object):
-    def __init__(self, cluster, workers=None):
-        self._cluster = cluster
-        self._workers = min(workers or len(cluster), 16)
-        self._commands = []
-        self._complete = False
-
-    def __getattr__(self, attr):
-        if attr in self.__dict__:
-            return self.__dict__[attr]
-        else:
-            command = EventualCommand(attr)
-            self._commands.append(command)
-            return command
-
-    def _execute(self):
-        num_commands = len(self._commands)
-        if num_commands == 0:
-            self._results = []
-            return
-        command_map = {}
-        piped_dbs = defaultdict(list)
-        pool = None
-
-        # 0x00 build up a collection of pipes
-        pipes = getattr(self._cluster, 'pipeline')()
-
-        # 0x01 run commands on all pipes
-        for command in self._commands:
-            command_map[command._ident] = command
-            if self._cluster.router:
-                db_nums = self._cluster.router.get_db(self._cluster, command._attr, *command._args, **command._kwargs)
-            else:
-                db_nums = range(len(self._cluster))
             # update the pipelined dbs
-            [piped_dbs[n].append(command._ident) for n in db_nums]
-            # add to pipeline
-            [getattr(pipes[n], command._attr)(*command._args, **command._kwargs) for n in db_nums]
+            for db_num in db_nums:
+                # map the ident to a db
+                if pipelined:
+                    pipe_command_map[db_num].append(cmd_ident)
 
-        # 0x02 execute pipes in thread pool
-        pool = ThreadPool(self._workers)
-        [pool.add(db, getattr(pipes[db], 'execute'), (), {}) for db, command_lst in piped_dbs.iteritems()]
+                # add to pending commands
+                pending_commands[db_num].append(command)
 
-        # 0x03 consolidate commands with their appropriate results
+        # execute our pending commands either in the pool, or using a pipeline
+        for db_num, command_list in pending_commands.iteritems():
+            for command in command_list:
+                if pipelined:
+                    # add to pipeline
+                    pipes[db_num].add(command)
+                else:
+                    # execute in pool
+                    pool.add(command._ident, getattr(self._cluster[db_num], command._attr), command._args, command._kwargs)
+
+        # We need to finalize our commands with a single execute in pipelines
+        if pipelined:
+            for db, pipe in pipes.iteritems():
+                pool.add(db, pipe.execute, (), {})
+
+        # Consolidate commands with their appropriate results
         result_map = pool.join()
-        for db, result in result_map.iteritems():
-            if len(result) == 1:
-                result = result[0]
-            for i, value in enumerate(result):
-                command_map[piped_dbs[db][i]]._wrapped = value
+
+        # Results get grouped by their command signature, so we have to separate the logic
+        if pipelined:
+            for db, result in result_map.iteritems():
+                if len(result) == 1:
+                    result = result[0]
+                for i, value in enumerate(result):
+                    command_map[pipe_command_map[db][i]]._set_value(value)
+
+        else:
+            for command in self._commands:
+                result = result_map[command._ident]
+                if len(result) == 1:
+                    result = result[0]
+                command._set_value(result)
 
         self._complete = True
 
@@ -352,20 +353,6 @@ class DistributedContextManager(object):
 
     def __enter__(self):
         self._handler = DistributedConnection(self._cluster, self._workers)
-        return self._handler
-
-    def __exit__(self, exc_type, exc_value, tb):
-        # we need to break up each command and route it
-        self._handler._execute()
-
-
-class DistributedPipelinedContextManager(object):
-    def __init__(self, cluster, workers=None):
-        self._workers = workers
-        self._cluster = cluster
-
-    def __enter__(self):
-        self._handler = DistributedPipelineConnection(self._cluster, self._workers)
         return self._handler
 
     def __exit__(self, exc_type, exc_value, tb):

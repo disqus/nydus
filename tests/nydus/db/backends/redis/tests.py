@@ -41,7 +41,7 @@ class RedisTest(BaseTest):
             }
         })
         chars = ('a', 'b', 'c', 'd', 'e', 'f')
-        with redis.pipelined_map() as conn:
+        with redis.map() as conn:
             [conn.set(c, i) for i, c in enumerate(chars)]
             res = [conn.get(c) for c in chars]
         self.assertEqual(range(len(chars)), [int(r._wrapped) for r in res])
