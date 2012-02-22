@@ -29,11 +29,11 @@ The create_cluster function is a simple helper to configure a ``Cluster`` based 
 
 There are two required keyword arguments:
 
-* engine: full path to the backend class, which should extend ``nydus.db.backends.BaseConnection``.
+* ``engine``: full path to the backend class, which should extend ``nydus.db.backends.BaseConnection``.
 
-* hosts: a dictionary, where the key is an ordered numeric value, and the result is a dict of connection options.
+* ``hosts``: a dictionary, where the key is an ordered numeric value, and the result is a dict of connection options.
 
-  For the curious, the keys are numeric values for readability.
+  (the keys are numeric values simply for readability in configuration)
 
 Optionally, you may also specify a value for ``router``, which is the full path to the router class,
 which must extend ``nydus.db.routers.BaseRouter``.
