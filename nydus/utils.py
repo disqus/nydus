@@ -62,7 +62,11 @@ class ThreadPool(object):
         for worker in xrange(workers):
             self.workers.append(Worker(self.queue))
 
-    def add(self, ident, func, args, kwargs):
+    def add(self, ident, func, args=None, kwargs=None):
+        if args is None:
+            args = ()
+        if kwargs is None:
+            kwargs = {}
         task = (ident, func, args, kwargs)
         self.tasks.append(ident)
         self.queue.put_nowait(task)

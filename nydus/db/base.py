@@ -236,6 +236,9 @@ class EventualCommand(object):
         self._wrapped = value
         self._evaled = True
 
+    def _execute(self, conn):
+        return getattr(conn, self._attr)(*self._args, **self._kwargs)
+
 
 class DistributedConnection(object):
     def __init__(self, cluster, workers=None):
@@ -273,14 +276,11 @@ class DistributedConnection(object):
         # build up a list of pending commands and their routing information
         for command in self._commands:
             cmd_ident = command._ident
-            cmd_attr = command._attr
-            cmd_args = command._args
-            cmd_kwargs = command._kwargs
 
             command_map[cmd_ident] = command
 
             if self._cluster.router:
-                db_nums = self._cluster.router.get_db(self._cluster, cmd_attr, *cmd_args, **cmd_kwargs)
+                db_nums = self._cluster.router.get_db(self._cluster, command._attr, *command._args, **command._kwargs)
             else:
                 db_nums = range(len(self._cluster))
 
@@ -289,7 +289,7 @@ class DistributedConnection(object):
 
             # Don't bother with the pooling if we only need to do one operation on a single machine
             if num_commands == 1:
-                self._commands = [getattr(self._cluster[n], cmd_attr)(*cmd_args, **cmd_kwargs) for n in n]
+                self._commands = [command._execute(self._cluster[n]) for n in n]
                 return
 
             # Create the threadpool and pipe jobs into it
@@ -313,7 +313,7 @@ class DistributedConnection(object):
                     pipes[db_num].add(command)
                 else:
                     # execute in pool
-                    pool.add(command._ident, getattr(self._cluster[db_num], command._attr), command._args, command._kwargs)
+                    pool.add(command._ident, command._execute, [self._cluster[db_num]])
 
         # We need to finalize our commands with a single execute in pipelines
         if pipelined:
