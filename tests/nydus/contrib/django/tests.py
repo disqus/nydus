@@ -1,12 +1,6 @@
-"""
-tests.test_backends.test_django
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+from __future__ import absolute_import
 
-:copyright: (c) 2011 DISQUS.
-:license: Apache License 2.0, see LICENSE for more details.
-"""
-
-from .. import BaseTest
+from tests import BaseTest
 
 from django.conf import settings
 
@@ -53,14 +47,16 @@ if not settings.configured:
     )
 
 from nydus.contrib.django import DjangoDatabase
-from nydus.db import Cluster
+from nydus.db.base import Cluster
+
 
 class DjangoConnectionsTest(BaseTest):
     def test_simple(self):
         from django.db import connections
-        
+
         cursor = connections['default'].execute('SELECT 1')
         self.assertEquals(cursor.fetchone(), (1,))
+
 
 class DjangoSQLiteTest(BaseTest):
     def setUp(self):
@@ -71,7 +67,7 @@ class DjangoSQLiteTest(BaseTest):
     def test_proxy(self):
         cursor = self.db.execute('SELECT 1')
         self.assertEquals(cursor.fetchone(), (1,))
-    
+
     def test_with_cluster(self):
         p = Cluster(
             hosts={0: self.db},
@@ -88,13 +84,13 @@ class DjangoSQLiteTest(BaseTest):
 # class DjangoPsycopg2Test(BaseTest):
 #     def setUp(self):
 #         from django.db.backends import postgresql_psycopg2
-# 
+#
 #         self.db = DjangoDatabase(postgresql_psycopg2, name='nydus_test', num=0)
-# 
+#
 #     def test_proxy(self):
 #         cursor = self.db.execute('SELECT 1')
 #         self.assertEquals(cursor.fetchone(), (1,))
-#     
+#
 #     def test_with_cluster(self):
 #         p = Cluster(
 #             hosts={0: self.db},

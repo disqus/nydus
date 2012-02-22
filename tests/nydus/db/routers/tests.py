@@ -1,13 +1,7 @@
-"""
-tests.test_routers
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+from __future__ import absolute_import
 
-:copyright: (c) 2011 DISQUS.
-:license: Apache License 2.0, see LICENSE for more details.
-"""
-
-from . import BaseTest
-from nydus.db import Cluster
+from tests import BaseTest
+from nydus.db.base import Cluster
 from nydus.db.backends import BaseConnection
 from nydus.db.routers.redis import ConsistentHashingRouter
 from nydus.db.routers.redis import RoundRobinRouter

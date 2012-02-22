@@ -5,14 +5,16 @@ tests.test_connections
 :copyright: (c) 2011 DISQUS.
 :license: Apache License 2.0, see LICENSE for more details.
 """
+from __future__ import absolute_import
 
-from dingus import Dingus
+from mock import Mock
 
-from nydus.db import Cluster, create_cluster
-from nydus.db.routers import BaseRouter
-from nydus.db.backends import BaseConnection
+from nydus.db.base import Cluster, create_cluster
+from nydus.db.routers.base import BaseRouter
+from nydus.db.backends.base import BaseConnection
 
-from . import BaseTest, dingus_calls_to_dict
+from tests import BaseTest
+
 
 class DummyConnection(BaseConnection):
     def __init__(self, resp='foo', **kwargs):
@@ -22,12 +24,14 @@ class DummyConnection(BaseConnection):
     def foo(self, *args, **kwargs):
         return self.resp
 
+
 class DummyRouter(BaseRouter):
     def get_db(self, cluster, func, key=None, *args, **kwargs):
         # Assume first argument is a key
         if key == 'foo':
             return [1]
         return [0]
+
 
 class ClusterTest(BaseTest):
     def test_create_cluster(self):
@@ -39,13 +43,13 @@ class ClusterTest(BaseTest):
             }
         })
         self.assertEquals(len(c), 1)
-        
+
     def test_init(self):
         c = Cluster(
             hosts={0: BaseConnection(num=1)},
         )
         self.assertEquals(len(c), 1)
-    
+
     def test_proxy(self):
         c = DummyConnection(num=1, resp='bar')
         p = Cluster(
@@ -54,13 +58,12 @@ class ClusterTest(BaseTest):
         self.assertEquals(p.foo(), 'bar')
 
     def test_disconnect(self):
-        c = Dingus()
+        c = Mock()
         p = Cluster(
             hosts={0: c},
         )
         p.disconnect()
-        calls = dingus_calls_to_dict(c.calls)
-        self.assertTrue('disconnect' in calls)
+        c.disconnect.assert_called_once()
 
     def test_with_router(self):
         c = DummyConnection(num=0, resp='foo')
@@ -101,7 +104,7 @@ class ClusterTest(BaseTest):
         )
         self.assertEquals(p.get_conn(), [c, c2])
         self.assertEquals(p.get_conn('foo'), [c, c2])
-    
+
     def test_map(self):
         c = DummyConnection(num=0, resp='foo')
         c2 = DummyConnection(num=1, resp='bar')
@@ -196,8 +199,8 @@ class RetryClusterTest(BaseTest):
         })
 
     def test_returns_correctly(self):
-         cluster = self.build_cluster(connection=DummyConnection)
-         self.assertEquals(cluster.foo(), 'bar')
+        cluster = self.build_cluster(connection=DummyConnection)
+        self.assertEquals(cluster.foo(), 'bar')
 
     def test_retry_router_when_receives_error(self):
         cluster = self.build_cluster()

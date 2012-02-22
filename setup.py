@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 tests_require = [
     'nose',
     'unittest2',
-    'dingus',
+    'mock',
     'redis',
     'Django>=1.2,<1.4',
     'psycopg2',

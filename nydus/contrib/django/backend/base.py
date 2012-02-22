@@ -13,6 +13,7 @@ from django.core.exceptions import ImproperlyConfigured
 
 from nydus.db import connections
 
+
 class DatabaseWrapper(object):
     def __init__(self, settings_dict, alias=DEFAULT_DB_ALIAS):
         self.settings_dict = settings_dict

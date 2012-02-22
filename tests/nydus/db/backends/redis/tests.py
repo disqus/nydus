@@ -1,16 +1,11 @@
-"""
-tests.test_backends.test_redis
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+from __future__ import absolute_import
 
-:copyright: (c) 2011 DISQUS.
-:license: Apache License 2.0, see LICENSE for more details.
-"""
-
-from .. import BaseTest
+from tests import BaseTest
 
 from nydus.db.backends.redis import Redis
-from nydus.db import Cluster
+from nydus.db.base import Cluster
 import redis
+
 
 class RedisTest(BaseTest):
     def setUp(self):
@@ -19,7 +14,7 @@ class RedisTest(BaseTest):
 
     def test_proxy(self):
         self.assertEquals(self.redis.incr('RedisTest_proxy'), 1)
-    
+
     def test_with_cluster(self):
         p = Cluster(
             hosts={0: self.redis},

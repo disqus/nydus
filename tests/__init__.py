@@ -7,9 +7,11 @@ tests
 """
 import unittest2
 
+
 class BaseTest(unittest2.TestCase):
     def setUp(self):
         pass
+
 
 def dingus_calls_to_dict(obj):
     # remap dingus calls into a useable dict

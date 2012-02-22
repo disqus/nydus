@@ -63,6 +63,7 @@ CONNECTIONS = {
     # }
 }
 
+
 def configure(kwargs):
     for k, v in kwargs.iteritems():
         if k.upper() != k:

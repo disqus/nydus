@@ -16,8 +16,9 @@ from django.conf import settings
 
 conf.configure(getattr(settings, 'NYDUS_CONFIG', {}))
 
+
 class DjangoDatabase(BaseConnection):
-    def __init__(self, backend, name, host=None, port=None, test_name=None, 
+    def __init__(self, backend, name, host=None, port=None, test_name=None,
                        user=None, password=None, options={}, **kwargs):
         """
         Given an alias (which is defined in DATABASES), creates a new connection
