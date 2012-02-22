@@ -45,7 +45,7 @@ returns a cluster of nodes::
     >>> assert type(res) == list
     >>> assert len(res) == 3
 
-You can also map many queries (utilizing an internal queue) over connections (again, returned by the router):
+You can also map many queries (utilizing an internal queue) over connections (again, returned by the router)::
 
     >>> with redis.map() as conn:
     >>>     results = [conn.incr(k) for k in keys]
@@ -110,7 +110,7 @@ An improvement upon hashing, Nydus provides a Ketama-based consistent hashing ro
 Round Robin Router
 ~~~~~~~~~~~~~~~~~~
 
-An additional option for distributing queries is the round robin router.
+An additional option for distributing queries is the round robin router::
 
     >>> redis = create_cluster({
     >>>     'engine': 'nydus.db.backends.redis.Redis',
