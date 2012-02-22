@@ -6,6 +6,7 @@ nydus.db.base
 :license: Apache License 2.0, see LICENSE for more details.
 """
 
+from collections import defaultdict
 from nydus.db.routers import BaseRouter
 from nydus.utils import import_string, ThreadPool
 
@@ -110,6 +111,10 @@ class Cluster(object):
 
     def map(self, workers=None):
         return DistributedContextManager(self, workers)
+
+    def pipelined_map(self, workers=None):
+        # TODO should only be supported by dbs that support pipelining
+        return DistributedPipelinedContextManager(self, workers)
 
     def _retryable_execute(self, db_nums, attr, *args, **kwargs):
         retries = 0
@@ -281,6 +286,65 @@ class DistributedConnection(object):
         return self._commands
 
 
+class DistributedPipelineConnection(object):
+    def __init__(self, cluster, workers=None):
+        self._cluster = cluster
+        self._workers = min(workers or len(cluster), 16)
+        self._commands = []
+        self._complete = False
+
+    def __getattr__(self, attr):
+        if attr in self.__dict__:
+            return self.__dict__[attr]
+        else:
+            command = EventualCommand(attr)
+            self._commands.append(command)
+            return command
+
+    def _execute(self):
+        num_commands = len(self._commands)
+        if num_commands == 0:
+            self._results = []
+            return
+        command_map = {}
+        piped_dbs = defaultdict(list)
+        pool = None
+
+        # 0x00 build up a collection of pipes
+        pipes = getattr(self._cluster, 'pipeline')()
+
+        # 0x01 run commands on all pipes
+        for command in self._commands:
+            command_map[command._ident] = command
+            if self._cluster.router:
+                db_nums = self._cluster.router.get_db(self._cluster, command._attr, *command._args, **command._kwargs)
+            else:
+                db_nums = range(len(self._cluster))
+            # update the pipelined dbs
+            [piped_dbs[n].append(command._ident) for n in db_nums]
+            # add to pipeline
+            [getattr(pipes[n], command._attr)(*command._args, **command._kwargs) for n in db_nums]
+
+        # 0x02 execute pipes in thread pool
+        pool = ThreadPool(self._workers)
+        [pool.add(db, getattr(pipes[db], 'execute'), (), {}) for db, command_lst in piped_dbs.iteritems()]
+
+        # 0x03 consolidate commands with their appropriate results
+        result_map = pool.join()
+        for db, result in result_map.iteritems():
+            if len(result) == 1:
+                result = result[0]
+            for i, value in enumerate(result):
+                command_map[piped_dbs[db][i]]._wrapped = value
+
+        self._complete = True
+
+    def get_results(self):
+        assert self._complete, 'you must execute the commands before fetching results'
+
+        return self._commands
+
+
 class DistributedContextManager(object):
     def __init__(self, cluster, workers=None):
         self._workers = workers
@@ -288,6 +352,20 @@ class DistributedContextManager(object):
 
     def __enter__(self):
         self._handler = DistributedConnection(self._cluster, self._workers)
+        return self._handler
+
+    def __exit__(self, exc_type, exc_value, tb):
+        # we need to break up each command and route it
+        self._handler._execute()
+
+
+class DistributedPipelinedContextManager(object):
+    def __init__(self, cluster, workers=None):
+        self._workers = workers
+        self._cluster = cluster
+
+    def __enter__(self):
+        self._handler = DistributedPipelineConnection(self._cluster, self._workers)
         return self._handler
 
     def __exit__(self, exc_type, exc_value, tb):
