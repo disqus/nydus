@@ -20,7 +20,7 @@ The following example creates a Redis connection cluster which will distribute r
     >>> res = redis.incr('foo')
     >>>
     >>> assert res == 1
-    
+
 Distributed Queries
 -------------------
 
@@ -49,3 +49,6 @@ You can also map many queries (utilizing an internal queue) over connections (ag
 
     >>> with redis.map() as conn:
     >>>     results = [conn.incr(k) for k in keys]
+
+As of release 0.5.0, the map() function now supports pipelines, and the included Redis backend will pipeline commands
+wherever possible.
