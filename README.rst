@@ -21,6 +21,23 @@ The following example creates a Redis connection cluster which will distribute r
     >>>
     >>> assert res == 1
 
+
+nydus.db.create_cluster
+-----------------------
+
+The create_cluster function is a simple helper to configure a ``Cluster`` based on a simple dict config.
+
+There are two required keyword arguments:
+
+* engine: full path to the backend class, which should extend ``nydus.db.backends.BaseConnection``.
+
+* hosts: a dictionary, where the key is an ordered numeric value, and the result is a dict of connection options.
+
+  For the curious, the keys are numeric values for readability.
+
+Optionally, you may also specify a value for ``router``, which is the full path to the router class,
+which must extend ``nydus.db.routers.BaseRouter``.
+
 Distributed Queries
 -------------------
 
@@ -69,6 +86,12 @@ You can configure the Redis client for a connection by specifying it's full path
     >>>     },
     >>> )}
 
+The available host options are:
+
+* host
+* port
+* db
+* timeout
 
 The Redis client also supports pipelines via the map command. This means that all commands will hit servers at most
 as of once::
