@@ -167,21 +167,17 @@ class EventualCommand(object):
     __members__ = property(lambda self: self.__dir__())
 
     def __init__(self, attr):
-        self.__dict__.update({
-            '_attr': attr,
-            '_wrapped': None,
-            '_evaled': False,
-            '_args': [],
-            '_kwargs': {},
-            '_ident': None,
-        })
+        self._attr = attr
+        self._wrapped = None
+        self._evaled = False
+        self._args = []
+        self._kwargs = {}
+        self._ident = None
 
     def __call__(self, *args, **kwargs):
-        self.__dict__.update({
-            '_args': args,
-            '_kwargs': kwargs,
-            '_ident': ':'.join(map(str, [id(self._attr), id(self._args), id(self._kwargs)])),
-        })
+        self._args = args
+        self._kwargs = kwargs
+        self._ident = ':'.join(map(str, [id(self._attr), id(self._args), id(self._kwargs)]))
         return self
 
     def __repr__(self):
@@ -190,29 +186,19 @@ class EventualCommand(object):
         return u'<EventualCommand: %s args=%s kwargs=%s>' % (self._attr, self._args, self._kwargs)
 
     def __getattr__(self, name):
-        if name in self.__dict__:
-            return self.__dict__[name]
+        if name in ('_attr', '_wrapped', '_evaled', '_args', '_kwargs', '_ident'):
+            return getattr(self, name)
         return getattr(self._wrapped, name)
 
     def __setattr__(self, name, value):
-        if name in self.__dict__:
-            self.__dict__[name] = value
-        else:
-            setattr(self._wrapped, name, value)
+        if name in ('_attr', '_wrapped', '_evaled', '_args', '_kwargs', '_ident'):
+            return object.__setattr__(self, name, value)
+        return setattr(self._wrapped, name, value)
 
     def __delattr__(self, name):
-        if name == "_wrapped":
-            raise TypeError("can't delete _wrapped.")
+        if name in ('_attr', '_wrapped', '_evaled', '_args', '_kwargs', '_ident'):
+            raise TypeError("can't delete %s." % name)
         delattr(self._wrapped, name)
-
-    def __dir__(self):
-        return dir(self._wrapped)
-
-    def __str__(self):
-        return str(self._wrapped)
-
-    def __unicode__(self):
-        return unicode(self._wrapped)
 
     def __deepcopy__(self, memo):
         # Changed to use deepcopy from copycompat, instead of copy
@@ -226,18 +212,76 @@ class EventualCommand(object):
         return self._wrapped.__class__
     __class__ = property(__get_class)
 
-    def __eq__(self, other):
-        return self._wrapped == other
-
-    def __hash__(self):
-        return hash(self._wrapped)
-
     def _set_value(self, value):
         self._wrapped = value
         self._evaled = True
 
     def _execute(self, conn):
         return getattr(conn, self._attr)(*self._args, **self._kwargs)
+
+    def __dict__(self):
+        try:
+            return self._current_object.__dict__
+        except RuntimeError:
+            return AttributeError('__dict__')
+    __dict__ = property(__dict__)
+
+    def __setitem__(self, key, value):
+        self._wrapped[key] = value
+
+    def __delitem__(self, key):
+        del self._wrapped[key]
+
+    def __setslice__(self, i, j, seq):
+        self._wrapped[i:j] = seq
+
+    def __delslice__(self, i, j):
+        del self._wrapped[i:j]
+
+    __delattr__ = lambda x, n: delattr(x._wrapped, n)
+    __lt__ = lambda x, o: x._wrapped < o
+    __le__ = lambda x, o: x._wrapped <= o
+    __eq__ = lambda x, o: x._wrapped == o
+    __ne__ = lambda x, o: x._wrapped != o
+    __gt__ = lambda x, o: x._wrapped > o
+    __ge__ = lambda x, o: x._wrapped >= o
+    __cmp__ = lambda x, o: cmp(x._wrapped, o)
+    __hash__ = lambda x: hash(x._wrapped)
+    # attributes are currently not callable
+    # __call__ = lambda x, *a, **kw: x._wrapped(*a, **kw)
+    __len__ = lambda x: len(x._wrapped)
+    __getitem__ = lambda x, i: x._wrapped[i]
+    __iter__ = lambda x: iter(x._wrapped)
+    __contains__ = lambda x, i: i in x._wrapped
+    __getslice__ = lambda x, i, j: x._wrapped[i:j]
+    __add__ = lambda x, o: x._wrapped + o
+    __sub__ = lambda x, o: x._wrapped - o
+    __mul__ = lambda x, o: x._wrapped * o
+    __floordiv__ = lambda x, o: x._wrapped // o
+    __mod__ = lambda x, o: x._wrapped % o
+    __divmod__ = lambda x, o: x._wrapped.__divmod__(o)
+    __pow__ = lambda x, o: x._wrapped ** o
+    __lshift__ = lambda x, o: x._wrapped << o
+    __rshift__ = lambda x, o: x._wrapped >> o
+    __and__ = lambda x, o: x._wrapped & o
+    __xor__ = lambda x, o: x._wrapped ^ o
+    __or__ = lambda x, o: x._wrapped | o
+    __div__ = lambda x, o: x._wrapped.__div__(o)
+    __truediv__ = lambda x, o: x._wrapped.__truediv__(o)
+    __neg__ = lambda x: -(x._wrapped)
+    __pos__ = lambda x: +(x._wrapped)
+    __abs__ = lambda x: abs(x._wrapped)
+    __invert__ = lambda x: ~(x._wrapped)
+    __complex__ = lambda x: complex(x._wrapped)
+    __int__ = lambda x: int(x._wrapped)
+    __long__ = lambda x: long(x._wrapped)
+    __float__ = lambda x: float(x._wrapped)
+    __oct__ = lambda x: oct(x._wrapped)
+    __hex__ = lambda x: hex(x._wrapped)
+    __index__ = lambda x: x._wrapped.__index__()
+    __coerce__ = lambda x, o: x.__coerce__(x, o)
+    __enter__ = lambda x: x.__enter__()
+    __exit__ = lambda x, *a, **kw: x.__exit__(*a, **kw)
 
 
 class DistributedConnection(object):

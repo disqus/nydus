@@ -9,7 +9,7 @@ from __future__ import absolute_import
 
 from mock import Mock
 
-from nydus.db.base import Cluster, create_cluster
+from nydus.db.base import Cluster, create_cluster, EventualCommand
 from nydus.db.routers.base import BaseRouter
 from nydus.db.backends.base import BaseConnection
 
@@ -216,3 +216,24 @@ class RetryClusterTest(BaseTest):
         cluster = self.build_cluster(router=InconsistentRouter, connection=ScumbagConnection)
         self.assertRaisesRegexp(Exception, 'returned multiple DBs',
                                 cluster.foo)
+
+
+class EventualCommandTest(BaseTest):
+    def test_unevaled_repr(self):
+        ec = EventualCommand('foo')
+        ec('bar', baz='foo')
+
+        self.assertEquals(repr(ec), u"<EventualCommand: foo args=('bar',) kwargs={'baz': 'foo'}>")
+
+    def test_evaled_repr(self):
+        ec = EventualCommand('foo')
+        ec('bar', baz='foo')
+        ec._set_value('biz')
+
+        self.assertEquals(repr(ec), u"'biz'")
+
+    def test_coersion(self):
+        ec = EventualCommand('foo')()
+        ec._set_value('5')
+
+        self.assertEquals(int(ec), 5)
