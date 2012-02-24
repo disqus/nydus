@@ -249,6 +249,7 @@ class EventualCommand(object):
     __hash__ = lambda x: hash(x._wrapped)
     # attributes are currently not callable
     # __call__ = lambda x, *a, **kw: x._wrapped(*a, **kw)
+    __nonzero__ = lambda x: bool(x._wrapped)
     __len__ = lambda x: len(x._wrapped)
     __getitem__ = lambda x, i: x._wrapped[i]
     __iter__ = lambda x: iter(x._wrapped)
