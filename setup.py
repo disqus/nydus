@@ -16,7 +16,7 @@ install_requires = [
 
 setup(
     name='nydus',
-    version='0.5.0',
+    version='0.6.0',
     author='David Cramer',
     author_email='dcramer@gmail.com',
     url='http://github.com/disqus/nydus',
