@@ -277,6 +277,8 @@ class EventualCommand(object):
     __int__ = lambda x: int(x._wrapped)
     __long__ = lambda x: long(x._wrapped)
     __float__ = lambda x: float(x._wrapped)
+    __str__ = lambda x: str(x._wrapped)
+    __unicode__ = lambda x: unicode(x._wrapped)
     __oct__ = lambda x: oct(x._wrapped)
     __hex__ = lambda x: hex(x._wrapped)
     __index__ = lambda x: x._wrapped.__index__()

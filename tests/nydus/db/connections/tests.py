@@ -236,8 +236,16 @@ class EventualCommandTest(BaseTest):
         ec = EventualCommand('foo')()
         ec._set_value('5')
 
+        self.assertEquals(int(ec), 5)
+
     def test_nonzero(self):
         ec = EventualCommand('foo')()
         ec._set_value(None)
 
         self.assertEquals(int(ec or 0), 0)
+
+    def test_evaled_unicode(self):
+        ec = EventualCommand('foo')
+        ec._set_value('biz')
+
+        self.assertEquals(unicode(ec), u'biz')
