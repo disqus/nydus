@@ -351,7 +351,6 @@ class DistributedConnection(object):
 
         # execute our pending commands either in the pool, or using a pipeline
         for db_num, command_list in pending_commands.iteritems():
-            print db_num, command_list
             if pipelined:
                 pipes[db_num] = self._cluster[db_num].get_pipeline()
             for command in command_list:
