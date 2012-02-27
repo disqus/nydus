@@ -308,7 +308,6 @@ class DistributedConnection(object):
             self._commands = []
             return
 
-        pool = None
         command_map = {}
         pipelined = all(self._cluster[n].supports_pipelines for n in self._cluster)
         pending_commands = defaultdict(list)
@@ -338,10 +337,6 @@ class DistributedConnection(object):
                 self._commands = [command._execute(self._cluster[n]) for n in n]
                 return
 
-            # Create the threadpool and pipe jobs into it
-            if not pool:
-                pool = ThreadPool(self._workers)
-
             # update the pipelined dbs
             for db_num in db_nums:
                 # map the ident to a db
@@ -350,6 +345,9 @@ class DistributedConnection(object):
 
                 # add to pending commands
                 pending_commands[db_num].append(command)
+
+        # Create the threadpool and pipe jobs into it
+        pool = ThreadPool(min(self._workers, len(pending_commands)))
 
         # execute our pending commands either in the pool, or using a pipeline
         for db_num, command_list in pending_commands.iteritems():
