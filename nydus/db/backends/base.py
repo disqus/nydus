@@ -68,3 +68,6 @@ class BaseConnection(object):
 
     def get_pipeline(self):
         return BasePipeline(self)
+
+    def __getattr__(self, attr):
+        return getattr(self.connection, attr)

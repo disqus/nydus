@@ -14,22 +14,6 @@ from redis import exceptions as client_exceptions
 
 from nydus.db.backends import BaseConnection
 
-# from nydus.db.backends import BasePipeline
-
-
-# class ThoonkPipeline(BasePipeline):
-#     def __init__(self, connection):
-#         self.pending = []
-#         self.connection = connection
-#         self.pipe = connection.pipeline()
-
-#     def add(self, command):
-#         self.pending.append(command)
-#         getattr(self.pipe, command._attr)(*command._args, **command._kwargs)
-
-#     def execute(self):
-#         return self.pipe.execute()
-
 
 class Thoonk(BaseConnection):
     # Exceptions that can be retried by this backend
@@ -56,13 +40,3 @@ class Thoonk(BaseConnection):
 
     def disconnect(self):
         self.pubsub.close()
-
-    # def get_pipeline(self, *args, **kwargs):
-    #     return ThoonkPipeline(self)
-
-    def __getattr__(self, attr):
-        """
-        Treat the pubsub as the first class object here,
-        fail over to the redis connection
-        """
-        return getattr(self.connection, attr)

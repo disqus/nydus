@@ -54,10 +54,3 @@ class Redis(BaseConnection):
 
     def get_pipeline(self, *args, **kwargs):
         return RedisPipeline(self)
-
-    def __getattr__(self, attr):
-        if attr in self.__dict__:
-            return self.__dict__[attr]
-        else:
-            # Send to router
-            return getattr(self.connection, attr)
