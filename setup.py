@@ -9,7 +9,13 @@ tests_require = [
     'redis',
     'Django>=1.2,<1.4',
     'psycopg2',
+    'thoonk',
 ]
+
+dependency_links = [
+    'https://github.com/andyet/thoonk.py/tarball/master#egg=thoonk',
+]
+
 
 install_requires = [
 ]
@@ -24,7 +30,7 @@ setup(
     packages=find_packages(exclude=('tests',)),
     zip_safe=False,
     install_requires=install_requires,
-    dependency_links=[],
+    dependency_links=dependency_links,
     tests_require=tests_require,
     extras_require={'test': tests_require},
     test_suite='nose.collector',
