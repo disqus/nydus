@@ -40,3 +40,7 @@ class Thoonk(BaseConnection):
 
     def disconnect(self):
         self.connection.close()
+
+    def flushdb(self):
+        """the tests assume this function exists for all redis-like backends"""
+        self.connection.redis.flushdb()

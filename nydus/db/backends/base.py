@@ -70,4 +70,7 @@ class BaseConnection(object):
         return BasePipeline(self)
 
     def __getattr__(self, attr):
-        return getattr(self.connection, attr)
+        if self is not self.connection:
+            return getattr(self.connection, attr)
+        # break infinite recursion loop
+        raise AttributeError("'%s' object has no attribute '%s'" % (type(self), attr))
