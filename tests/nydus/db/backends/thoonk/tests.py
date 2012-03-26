@@ -42,6 +42,10 @@ class TestThoonkPubsub(unittest2.TestCase):
     def tearDown(self):
         pass
 
+    def test_flush_db(self):
+        pubsub = self.get_cluster('nydus.db.routers.redis.ConsistentHashingRouter')
+        pubsub.flushdb()
+
     def test_job_with_ConsistentHashingRouter(self):
         pubsub = self.get_cluster('nydus.db.routers.redis.ConsistentHashingRouter')
         job = pubsub.job("test1")
