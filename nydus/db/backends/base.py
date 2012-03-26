@@ -61,6 +61,9 @@ class BaseConnection(object):
         self._connection = None
 
     def connect(self):
+        """
+        connect() must return a connection object
+        """
         raise NotImplementedError
 
     def disconnect(self):
@@ -69,8 +72,5 @@ class BaseConnection(object):
     def get_pipeline(self):
         return BasePipeline(self)
 
-    def __getattr__(self, attr):
-        if self is not self.connection:
-            return getattr(self.connection, attr)
-        # break infinite recursion loop
-        raise AttributeError("'%s' object has no attribute '%s'" % (type(self), attr))
+    def __getattr__(self, name):
+        return getattr(self.connection, name)
