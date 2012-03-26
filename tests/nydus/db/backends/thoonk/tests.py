@@ -45,7 +45,7 @@ class TestThoonkPubsub(unittest2.TestCase):
     def test_job_with_ConsistentHashingRouter(self):
         pubsub = self.get_cluster('nydus.db.routers.redis.ConsistentHashingRouter')
         job = pubsub.job("test1")
-        jid = job.put(10)
+        jid = job.put("10")
 
         jid_found = False
 
@@ -66,7 +66,7 @@ class TestThoonkPubsub(unittest2.TestCase):
         # put jobs onto the queue
         for x in xrange(0, size):
             jps = pubsub.job('testjob')
-            jid = jps.put(x)
+            jid = jps.put(str(x))
             if id(jps) not in jobs:
                 jobs[id(jps)] = []
             jobs[id(jps)].append(jid)
@@ -79,7 +79,7 @@ class TestThoonkPubsub(unittest2.TestCase):
         # make sure we fishi
         for x in xrange(0, size):
             jps = pubsub.job('testjob')
-            jid, job = jps.get()
+            jid, job, cancel_count = jps.get()
             jps.finish(jid)
 
         self.assertEqual(len(jobs), 5)

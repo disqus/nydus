@@ -9,7 +9,7 @@ tests_require = [
     'redis',
     'Django>=1.2,<1.4',
     'psycopg2',
-    'thoonk',
+    'thoonk==1.0.1.0',
 ]
 
 dependency_links = [
