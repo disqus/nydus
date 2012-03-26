@@ -39,4 +39,4 @@ class Thoonk(BaseConnection):
         return Pubsub(host=self.host, port=self.port, db=self.db, listen=self.listen)
 
     def disconnect(self):
-        self.pubsub.close()
+        self.connection.close()
