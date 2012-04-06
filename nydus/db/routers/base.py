@@ -117,7 +117,7 @@ class RoundRobinRouter(BaseRouter):
         super(RoundRobinRouter,self).__init__(*args, **kwargs)
 
     @classmethod
-    def verify_db_num(cls, db_num):
+    def ensure_db_num(cls, db_num):
         try:
             return int(db_num)
         except ValueError:
@@ -128,11 +128,11 @@ class RoundRobinRouter(BaseRouter):
         self._down_connections = {}
 
     def mark_connection_down(self, db_num):
-        db_num = self.verify_db_num(db_num)
+        db_num = self.ensure_db_num(db_num)
         self._down_connections[db_num] = time.time()
 
     def mark_connection_up(self, db_num):
-        db_num = self.verify_db_num(db_num)
+        db_num = self.ensure_db_num(db_num)
         self._down_connections.pop(db_num, None)
 
     def _setup_router(self, cluster, *args, **kwargs):
