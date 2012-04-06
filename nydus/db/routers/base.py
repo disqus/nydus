@@ -21,9 +21,6 @@ class BaseRouter(object):
     class UnableToSetupRouter(Exception):
         pass
 
-    class NoClusterToRoute(Exception):
-        pass
-
     def __init__(self, *args, **kwargs):
         self._ready = False
 
@@ -36,9 +33,6 @@ class BaseRouter(object):
         if not self._ready:
             if not self.setup_router(cluster, *args, **kwargs):
                 raise self.UnableToSetupRouter()
-
-        if not cluster:
-            raise self.NoClusterToRoute()
 
         key = self._pre_routing(cluster, attr, key, *args, **kwargs)
 
