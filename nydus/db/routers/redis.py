@@ -6,8 +6,6 @@ nydus.db.routers.redis
 :license: Apache License 2.0, see LICENSE for more details.
 """
 
-from binascii import crc32
-
 from nydus.db.routers import RoundRobinRouter
 from nydus.contrib.ketama import Ketama
 

@@ -7,6 +7,7 @@ nydus.db.base
 """
 import time
 
+from binascii import crc32
 from collections import defaultdict
 
 __all__ = ('BaseRouter', 'RoundRobinRouter', 'PartitionRouter')
@@ -148,7 +149,7 @@ class RoundRobinRouter(BaseRouter):
         if 'retry_for' in kwargs:
             self.mark_connection_down(kwargs['retry_for'])
 
-    def _route(self, cluster, key, *args, **kwargs):
+    def _route(self, cluster, attr, key, *args, **kwargs):
         now = time.time()
 
         while i <= len(cluster):
