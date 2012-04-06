@@ -78,16 +78,19 @@ class Cluster(object):
             yield name
 
     def _execute(self, attr, args, kwargs):
-        connections = self._connections_for(*args, **kwargs)
+        connections = self._connections_for(attr, *args, **kwargs)
 
         results = []
         for conn in connections:
             for retry in xrange(self.max_connection_retries):
                 try:
                     results.append(getattr(conn, attr)(*args, **kwargs))
-                except tuple(connection.retryable_exceptions):
-                    if retry + 1 == self.max_connection_retries:
-                        raise self.MaxRetriesExceededError()
+                except tuple(connection.retryable_exceptions), e:
+                    if not self.router.retryable:
+                        raise e
+
+                    if retry == self.max_connection_retries:
+                        raise self.MaxRetriesExceededError(e)
 
                     conn = self._connections_for(retry_for=conn.db, *args, **kwargs)
 
@@ -110,7 +113,7 @@ class Cluster(object):
         during all steps of the process. An example of this would be
         Redis pipelines.
         """
-        connections = self._connections_for(*args, **kwargs)
+        connections = self._connections_for('get_conn', *args, **kwargs)
 
         if len(connections) is 1:
             return connections[0]
@@ -120,11 +123,8 @@ class Cluster(object):
     def map(self, workers=None):
         return DistributedContextManager(self, workers)
 
-    def _db_nums_for(self, *args, **kwargs):
-        return self.router.get_db(self, 'get_conn', *args, **kwargs)
-
-    def _connections_for(self, *args, **kwargs):
-        return [self[n] for n in self._db_nums_for(*args, **kwargs)]
+    def _connections_for(self, attr, key=None, *args, **kwargs):
+        return [self[n] for n in self.router.get_dbs(self, attr, key, *args, **kwargs)]
 
 
 class CallProxy(object):

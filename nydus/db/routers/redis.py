@@ -12,11 +12,6 @@ from nydus.db.routers import RoundRobinRouter
 from nydus.contrib.ketama import Ketama
 
 
-class PartitionRouter(BaseRouter):
-    def _route(self, cluster, key, *args, **kwargs):
-        return [crc32(str(key)) % len(cluster)]
-
-
 class ConsistentHashingRouter(RoundRobinRouter):
     '''
     Router that returns host number based on a consistent hashing algorithm.
@@ -35,11 +30,13 @@ class ConsistentHashingRouter(RoundRobinRouter):
         super(ConsistenHashingRouter, self).flush_down_connections()
 
     def mark_connection_down(self, db_num):
+        db_num = self.verify_db_num(db_num)
         self._hash.remove_node(self._db_num_id_map[db_num])
 
         super(ConsistenHashingRouter, self).mark_connection_down(db_num)
 
     def mark_conenction_up(self, db_num):
+        db_num = self.verify_db_num(db_num)
         self._hash.add_node(self._db_num_id_map[db_num])
 
         super(ConsistenHashingRouter, self).mark_connection_up(db_num)
@@ -47,6 +44,8 @@ class ConsistentHashingRouter(RoundRobinRouter):
     def _setup_router(self, cluster, *args, **kwargs):
         self._db_num_id_map = dict([(db_num, host.identifier) for db_num, host in cluster.hosts.iteritems()])
         self._hash = Ketama(identifiers.keys())
+
+        return True
 
     def _route(self, cluster, key, *args, **kwargs):
         found = self._hash.get_node(key)
