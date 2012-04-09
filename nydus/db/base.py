@@ -32,11 +32,11 @@ def create_cluster(settings):
     # Pull in our router
     router = settings.get('router')
     if isinstance(router, basestring):
-        router = import_string(router)()
+        router = import_string(router)
     elif router:
-        router = router()
+        router = router
     else:
-        router = BaseRouter()
+        router = BaseRouter
 
     # Build the connection cluster
     return Cluster(
@@ -56,9 +56,9 @@ class Cluster(object):
     class MaxRetriesExceededError(Exception):
         pass
 
-    def __init__(self, hosts, router=None, max_connection_retries=20):
+    def __init__(self, hosts, router=BaseRouter, max_connection_retries=20):
         self.hosts = hosts
-        self.router = router
+        self.router = router()
         self.max_connection_retries = max_connection_retries
 
     def __len__(self):
@@ -85,14 +85,16 @@ class Cluster(object):
             for retry in xrange(self.max_connection_retries):
                 try:
                     results.append(getattr(conn, attr)(*args, **kwargs))
-                except tuple(connection.retryable_exceptions), e:
+                except tuple(conn.retryable_exceptions), e:
                     if not self.router.retryable:
                         raise e
 
-                    if retry == self.max_connection_retries:
+                    if retry == self.max_connection_retries - 1:
                         raise self.MaxRetriesExceededError(e)
 
-                    conn = self._connections_for(retry_for=conn.db, *args, **kwargs)
+                    conn = self._connections_for(attr, retry_for=conn.num, *args, **kwargs)[0]
+                else:
+                    break
 
         # If we only had one db to query, we simply return that res
         if len(results) == 1:
@@ -123,8 +125,8 @@ class Cluster(object):
     def map(self, workers=None):
         return DistributedContextManager(self, workers)
 
-    def _connections_for(self, attr, key=None, *args, **kwargs):
-        return [self[n] for n in self.router.get_dbs(self, attr, key, *args, **kwargs)]
+    def _connections_for(self, attr, *args, **kwargs):
+        return [self[n] for n in self.router.get_dbs(self, attr, *args, **kwargs)]
 
 
 class CallProxy(object):
@@ -306,9 +308,9 @@ class DistributedConnection(object):
             command_map[cmd_ident] = command
 
             if self._cluster.router:
-                db_nums = self._cluster.router.get_db(self._cluster, command._attr, *command._args, **command._kwargs)
+                db_nums = self._cluster.router.get_dbs(self._cluster, command._attr, *command._args, **command._kwargs)
             else:
-                db_nums = range(len(self._cluster))
+                db_nums = self._cluster.keys()
 
             # The number of commands is based on the total number of executable commands
             num_commands += len(db_nums)

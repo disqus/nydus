@@ -9,6 +9,7 @@ import time
 
 from binascii import crc32
 from collections import defaultdict
+from itertools import cycle
 
 __all__ = ('BaseRouter', 'RoundRobinRouter', 'PartitionRouter')
 
@@ -37,10 +38,14 @@ class BaseRouter(object):
 
         key = self._pre_routing(cluster, attr, key, *args, **kwargs)
 
+        if not key:
+            return cluster.hosts.keys()
+
         try:
             db_nums = self._route(cluster, attr, key, *args, **kwargs)
         except Exception, e:
             self._handle_exception(e)
+            db_nums = []
 
         return self._post_routing(cluster, attr, key, db_nums, *args, **kwargs)
 
@@ -72,7 +77,7 @@ class BaseRouter(object):
         """
         Perform routing and return db_nums
         """
-        return cluster.hosts.keys()
+        return [cluster.hosts.keys()[0]]
 
     def _post_routing(self, cluster, attr, key, db_nums, *args, **kwargs):
         """
@@ -121,7 +126,7 @@ class RoundRobinRouter(BaseRouter):
         try:
             return int(db_num)
         except ValueError:
-            raise self.InvalidDBNum()
+            raise cls.InvalidDBNum()
 
     def flush_down_connections(self):
         self._get_db_attempts = 0
@@ -140,37 +145,38 @@ class RoundRobinRouter(BaseRouter):
 
         return True
 
-    def _pre_routing(self, cluster, key, *args, **kwargs):
+    def _pre_routing(self, cluster, attr, key, *args, **kwargs):
         self._get_db_attempts += 1
 
-        if self._get_db_attempts > self.attempt_reconnect_threadhold:
+        if self._get_db_attempts > self.attempt_reconnect_threshold:
             self.flush_down_connections()
 
         if 'retry_for' in kwargs:
             self.mark_connection_down(kwargs['retry_for'])
 
+        return key
+
     def _route(self, cluster, attr, key, *args, **kwargs):
         now = time.time()
 
-        while i <= len(cluster):
+        for i in xrange(len(cluster)):
             db_num = self._hosts_cycler.next()
 
-            marked_down_at = self._down_connections.get(db_num, now)
+            marked_down_at = self._down_connections.get(db_num, 0)
 
-            if marked_down_at + self.retry_timeout >= now:
+            if marked_down_at + self.retry_timeout <= now:
                 return [db_num]
-            else:
-                i += 1
         else:
             raise self.HostListExhausted()
 
-    def _post_routing(self, cluster, key, db_nums, *args, **kwargs):
-        self.mark_connection_up(self, db_nums[0])
+    def _post_routing(self, cluster, attr, key, db_nums, *args, **kwargs):
+        if db_nums:
+           self.mark_connection_up(db_nums[0])
 
         return db_nums
 
 
 class PartitionRouter(BaseRouter):
-    def _route(self, cluster, key, *args, **kwargs):
+    def _route(self, cluster, attr, key, *args, **kwargs):
         return [crc32(str(key)) % len(cluster)]
 

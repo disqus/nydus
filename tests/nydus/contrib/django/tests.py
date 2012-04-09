@@ -68,13 +68,6 @@ class DjangoSQLiteTest(BaseTest):
         cursor = self.db.execute('SELECT 1')
         self.assertEquals(cursor.fetchone(), (1,))
 
-    def test_with_cluster(self):
-        p = Cluster(
-            hosts={0: self.db},
-        )
-        cursor = p.execute('SELECT 1')
-        self.assertEquals(cursor.fetchone(), (1,))
-
     def test_provides_identififer(self):
         self.assertEqual(
             "django.db.backends.sqlite3NAME=:memory: PORT=None HOST=None USER=None TEST_NAME=None PASSWORD=None OPTIONS={}",
