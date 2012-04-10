@@ -43,11 +43,11 @@ class TestThoonkPubsub(unittest2.TestCase):
         pass
 
     def test_flush_db(self):
-        pubsub = self.get_cluster('nydus.db.routers.redis.ConsistentHashingRouter')
+        pubsub = self.get_cluster('nydus.db.routers.keyvalue.ConsistentHashingRouter')
         pubsub.flushdb()
 
     def test_job_with_ConsistentHashingRouter(self):
-        pubsub = self.get_cluster('nydus.db.routers.redis.ConsistentHashingRouter')
+        pubsub = self.get_cluster('nydus.db.routers.keyvalue.ConsistentHashingRouter')
         job = pubsub.job("test1")
         jid = job.put("10")
 

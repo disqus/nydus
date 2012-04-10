@@ -82,7 +82,7 @@ class ClusterTest(BaseTest):
             hosts={0: c, 1: c2},
         )
         self.assertEquals(p.foo(), ['foo', 'bar'])
-        self.assertEquals(p.foo('foo'), 'foo')
+        self.assertEquals(p.foo('foo'), ['foo', 'bar'])
 
     def test_get_conn(self):
         c = DummyConnection(alias='foo', num=0, resp='foo')
@@ -102,7 +102,7 @@ class ClusterTest(BaseTest):
             hosts={0: c, 1: c2},
         )
         self.assertEquals(p.get_conn(), [c, c2])
-        self.assertEquals(p.get_conn('foo'), c)
+        self.assertEquals(p.get_conn('foo'), [c, c2])
 
     def test_map(self):
         c = DummyConnection(num=0, resp='foo')
@@ -134,7 +134,7 @@ class ClusterTest(BaseTest):
             self.assertEquals(bar, None)
 
         self.assertEquals(foo, ['foo', 'bar'])
-        self.assertEquals(bar, 'foo')
+        self.assertEquals(bar, ['foo', 'bar'])
 
 
 class FlakeyConnection(DummyConnection):
