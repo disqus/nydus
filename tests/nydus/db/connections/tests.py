@@ -26,8 +26,7 @@ class DummyConnection(BaseConnection):
 
 
 class DummyRouter(BaseRouter):
-    def get_db(self, cluster, func, key=None, *args, **kwargs):
-        # Assume first argument is a key
+    def get_dbs(self, cluster, attr, key=None, *args, **kwargs):
         if key == 'foo':
             return [1]
         return [0]
@@ -70,7 +69,7 @@ class ClusterTest(BaseTest):
         c2 = DummyConnection(num=1, resp='bar')
 
         # test dummy router
-        r = DummyRouter()
+        r = DummyRouter
         p = Cluster(
             hosts={0: c, 1: c2},
             router=r,
@@ -83,14 +82,14 @@ class ClusterTest(BaseTest):
             hosts={0: c, 1: c2},
         )
         self.assertEquals(p.foo(), ['foo', 'bar'])
-        self.assertEquals(p.foo('foo'), ['foo', 'bar'])
+        self.assertEquals(p.foo('foo'), 'foo')
 
     def test_get_conn(self):
         c = DummyConnection(alias='foo', num=0, resp='foo')
         c2 = DummyConnection(alias='foo', num=1, resp='bar')
 
         # test dummy router
-        r = DummyRouter()
+        r = DummyRouter
         p = Cluster(
             hosts={0: c, 1: c2},
             router=r,
@@ -103,14 +102,14 @@ class ClusterTest(BaseTest):
             hosts={0: c, 1: c2},
         )
         self.assertEquals(p.get_conn(), [c, c2])
-        self.assertEquals(p.get_conn('foo'), [c, c2])
+        self.assertEquals(p.get_conn('foo'), c)
 
     def test_map(self):
         c = DummyConnection(num=0, resp='foo')
         c2 = DummyConnection(num=1, resp='bar')
 
         # test dummy router
-        r = DummyRouter()
+        r = DummyRouter
         p = Cluster(
             hosts={0: c, 1: c2},
             router=r,
@@ -135,7 +134,7 @@ class ClusterTest(BaseTest):
             self.assertEquals(bar, None)
 
         self.assertEquals(foo, ['foo', 'bar'])
-        self.assertEquals(bar, ['foo', 'bar'])
+        self.assertEquals(bar, 'foo')
 
 
 class FlakeyConnection(DummyConnection):
@@ -158,7 +157,7 @@ class RetryableRouter(DummyRouter):
         self.key_args_seen = []
         super(RetryableRouter, self).__init__()
 
-    def get_db(self, cluster, func, key=None, *args, **kwargs):
+    def get_dbs(self, cluster, func, key=None, *args, **kwargs):
         self.kwargs_seen.append(kwargs)
         self.key_args_seen.append(key)
         return [0]
@@ -171,7 +170,7 @@ class InconsistentRouter(DummyRouter):
         self.returned = False
         super(InconsistentRouter, self).__init__()
 
-    def get_db(self, cluster, func, key=None, *args, **kwargs):
+    def get_dbs(self, cluster, func, key=None, *args, **kwargs):
         if self.returned:
             return range(5)
         else:
@@ -210,12 +209,8 @@ class RetryClusterTest(BaseTest):
 
     def test_protection_from_infinate_loops(self):
         cluster = self.build_cluster(connection=ScumbagConnection)
-        self.assertRaises(Exception, cluster.foo)
-
-    def test_retryable_router_returning_multiple_dbs_raises_ecxeption(self):
-        cluster = self.build_cluster(router=InconsistentRouter, connection=ScumbagConnection)
-        self.assertRaisesRegexp(Exception, 'returned multiple DBs',
-                                cluster.foo)
+        with self.assertRaises(Exception):
+            cluster.foo()
 
 
 class EventualCommandTest(BaseTest):
