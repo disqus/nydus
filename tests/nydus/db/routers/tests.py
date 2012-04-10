@@ -10,8 +10,8 @@ from mock import patch
 from tests import BaseTest
 from nydus.db.base import Cluster
 from nydus.db.backends import BaseConnection
-from nydus.db.routers import BaseRouter, RoundRobinRouter, PartitionRouter
-from nydus.db.routers.redis import ConsistentHashingRouter
+from nydus.db.routers import BaseRouter, RoundRobinRouter
+from nydus.db.routers.keyvalue import ConsistentHashingRouter, PartitionRouter
 
 
 class DummyConnection(BaseConnection):
@@ -67,9 +67,6 @@ class BaseRouterTest(BaseTest):
     def test_returns_whole_cluster_without_key(self):
         self.assertEquals(self.hosts.keys(), self.get_dbs(attr='test'))
 
-    def test_returns_sequence_with_one_item_when_given_key(self):
-        self.assertEqual(len(self.get_dbs(attr='test', key='foo')), 1)
-
     def test_get_dbs_handles_exception(self):
         with patch.object(self.router, '_route') as _route:
             with patch.object(self.router, '_handle_exception') as _handle_exception:
@@ -102,6 +99,9 @@ class BaseBaseRouterTest(BaseRouterTest):
 
         with self.assertRaises(self.TestException):
             self.router._handle_exception(e)
+
+    def test_returns_sequence_with_one_item_when_given_key(self):
+        self.assertEqual(len(self.get_dbs(attr='test', key='foo')), len(self.hosts))
 
 
 class BaseRoundRobinRouterTest(BaseRouterTest):
