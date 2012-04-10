@@ -88,11 +88,10 @@ class Cluster(object):
                 except tuple(conn.retryable_exceptions), e:
                     if not self.router.retryable:
                         raise e
-
-                    if retry == self.max_connection_retries - 1:
+                    elif retry == self.max_connection_retries - 1:
                         raise self.MaxRetriesExceededError(e)
-
-                    conn = self._connections_for(attr, retry_for=conn.num, *args, **kwargs)[0]
+                    else:
+                        conn = self._connections_for(attr, retry_for=conn.num, *args, **kwargs)[0]
                 else:
                     break
 

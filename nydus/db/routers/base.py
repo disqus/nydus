@@ -162,9 +162,9 @@ class RoundRobinRouter(BaseRouter):
         for i in xrange(len(cluster)):
             db_num = self._hosts_cycler.next()
 
-            marked_down_at = self._down_connections.get(db_num, 0)
+            marked_down_at = self._down_connections.get(db_num, False)
 
-            if marked_down_at + self.retry_timeout <= now:
+            if not marked_down_at or (marked_down_at + self.retry_timeout <= now):
                 return [db_num]
         else:
             raise self.HostListExhausted()
