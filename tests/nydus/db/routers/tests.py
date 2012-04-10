@@ -60,9 +60,9 @@ class BaseRouterTest(BaseTest):
         self.assertIsNone(dbdefaults[0])
 
         self.assertTrue(callable(self.router.setup_router))
-        setupargs, _, _, setupdefaults = getargspec(self.router.get_dbs)
+        setupargs, _, _, setupdefaults = getargspec(self.router.setup_router)
         self.assertTrue(set(setupargs) >= set(['self', 'cluster']))
-        self.assertIsNone(setupdefaults[0])
+        self.assertIsNone(setupdefaults)
 
     def test_returns_whole_cluster_without_key(self):
         self.assertEquals(self.hosts.keys(), self.get_dbs(attr='test'))
