@@ -7,11 +7,9 @@ nydus.db.base
 """
 import time
 
-from binascii import crc32
-from collections import defaultdict
 from itertools import cycle
 
-__all__ = ('BaseRouter', 'RoundRobinRouter', 'PartitionRouter')
+__all__ = ('BaseRouter', 'RoundRobinRouter')
 
 
 class BaseRouter(object):
@@ -77,7 +75,7 @@ class BaseRouter(object):
         """
         Perform routing and return db_nums
         """
-        return [cluster.hosts.keys()[0]]
+        return cluster.hosts.keys()
 
     def _post_routing(self, cluster, attr, key, db_nums, *args, **kwargs):
         """
@@ -174,9 +172,4 @@ class RoundRobinRouter(BaseRouter):
            self.mark_connection_up(db_nums[0])
 
         return db_nums
-
-
-class PartitionRouter(BaseRouter):
-    def _route(self, cluster, attr, key, *args, **kwargs):
-        return [crc32(str(key)) % len(cluster)]
 

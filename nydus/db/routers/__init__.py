@@ -6,4 +6,5 @@ nydus.db.routers
 :license: Apache License 2.0, see LICENSE for more details.
 """
 
-from .base import BaseRouter, RoundRobinRouter, PartitionRouter
+from .base import BaseRouter, RoundRobinRouter
+
