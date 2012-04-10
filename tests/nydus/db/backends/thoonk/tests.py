@@ -62,7 +62,7 @@ class TestThoonkPubsub(unittest2.TestCase):
         self.assertTrue(jid_found)
 
     def test_job_with_RoundRobinRouter(self):
-        pubsub = self.get_cluster('nydus.db.routers.redis.RoundRobinRouter')
+        pubsub = self.get_cluster('nydus.db.routers.RoundRobinRouter')
 
         jobs = {}
         size = 20
@@ -89,7 +89,7 @@ class TestThoonkPubsub(unittest2.TestCase):
         self.assertEqual(len(jobs), 5)
 
         for x in range(len(pubsub)):
-            ps = pubsub.get_conn()
+            ps = pubsub.get_conn('testjob')
             jps = ps.job('testjob')
             self.assertEqual(jps.get_ids(), [])
 

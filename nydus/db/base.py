@@ -25,24 +25,24 @@ def create_cluster(settings):
     """
     # Pull in our client
     if isinstance(settings['engine'], basestring):
-        conn = import_string(settings['engine'])
+        Conn = import_string(settings['engine'])
     else:
-        conn = settings['engine']
+        Conn = settings['engine']
 
     # Pull in our router
     router = settings.get('router')
     if isinstance(router, basestring):
-        router = import_string(router)()
+        router = import_string(router)
     elif router:
-        router = router()
+        router = router
     else:
-        router = BaseRouter()
+        router = BaseRouter
 
     # Build the connection cluster
     return Cluster(
         router=router,
         hosts=dict(
-            (conn_number, conn(num=conn_number, **host_settings))
+            (conn_number, Conn(num=conn_number, **host_settings))
             for conn_number, host_settings
             in settings['hosts'].iteritems()
         ),
@@ -53,10 +53,12 @@ class Cluster(object):
     """
     Holds a cluster of connections.
     """
+    class MaxRetriesExceededError(Exception):
+        pass
 
-    def __init__(self, hosts, router=None, max_connection_retries=20):
+    def __init__(self, hosts, router=BaseRouter, max_connection_retries=20):
         self.hosts = hosts
-        self.router = router
+        self.router = router()
         self.max_connection_retries = max_connection_retries
 
     def __len__(self):
@@ -76,22 +78,28 @@ class Cluster(object):
             yield name
 
     def _execute(self, attr, args, kwargs):
-        db_nums = self._db_nums_for(*args, **kwargs)
+        connections = self._connections_for(attr, *args, **kwargs)
 
-        if self.router and len(db_nums) is 1 and self.router.retryable:
-            # The router supports retryable commands, so we want to run a
-            # separate algorithm for how we get connections to run commands on
-            # and then possibly retry
-            return self._retryable_execute(db_nums, attr, *args, **kwargs)
+        results = []
+        for conn in connections:
+            for retry in xrange(self.max_connection_retries):
+                try:
+                    results.append(getattr(conn, attr)(*args, **kwargs))
+                except tuple(conn.retryable_exceptions), e:
+                    if not self.router.retryable:
+                        raise e
+                    elif retry == self.max_connection_retries - 1:
+                        raise self.MaxRetriesExceededError(e)
+                    else:
+                        conn = self._connections_for(attr, retry_for=conn.num, *args, **kwargs)[0]
+                else:
+                    break
+
+        # If we only had one db to query, we simply return that res
+        if len(results) == 1:
+            return results[0]
         else:
-            connections = self._connections_for(*args, **kwargs)
-            results = [getattr(conn, attr)(*args, **kwargs) for conn in connections]
-
-            # If we only had one db to query, we simply return that res
-            if len(results) == 1:
-                return results[0]
-            else:
-                return results
+            return results
 
     def disconnect(self):
         """Disconnects all connections in cluster"""
@@ -106,7 +114,7 @@ class Cluster(object):
         during all steps of the process. An example of this would be
         Redis pipelines.
         """
-        connections = self._connections_for(*args, **kwargs)
+        connections = self._connections_for('get_conn', *args, **kwargs)
 
         if len(connections) is 1:
             return connections[0]
@@ -116,34 +124,8 @@ class Cluster(object):
     def map(self, workers=None):
         return DistributedContextManager(self, workers)
 
-    def _retryable_execute(self, db_nums, attr, *args, **kwargs):
-        retries = 0
-
-        while retries <= self.max_connection_retries:
-            if len(db_nums) > 1:
-                raise Exception('Retryable router returned multiple DBs')
-            else:
-                connection = self[db_nums[0]]
-
-            try:
-                return getattr(connection, attr)(*args, **kwargs)
-            except tuple(connection.retryable_exceptions):
-                # We had a failure, so get a new db_num and try again, noting
-                # the DB number that just failed, so the backend can mark it as
-                # down
-                db_nums = self._db_nums_for(retry_for=db_nums[0], *args, **kwargs)
-                retries += 1
-        else:
-            raise Exception('Maximum amount of connection retries exceeded')
-
-    def _db_nums_for(self, *args, **kwargs):
-        if self.router:
-            return self.router.get_db(self, 'get_conn', *args, **kwargs)
-        else:
-            return range(len(self))
-
-    def _connections_for(self, *args, **kwargs):
-        return [self[n] for n in self._db_nums_for(*args, **kwargs)]
+    def _connections_for(self, attr, *args, **kwargs):
+        return [self[n] for n in self.router.get_dbs(self, attr, *args, **kwargs)]
 
 
 class CallProxy(object):
@@ -325,9 +307,9 @@ class DistributedConnection(object):
             command_map[cmd_ident] = command
 
             if self._cluster.router:
-                db_nums = self._cluster.router.get_db(self._cluster, command._attr, *command._args, **command._kwargs)
+                db_nums = self._cluster.router.get_dbs(self._cluster, command._attr, *command._args, **command._kwargs)
             else:
-                db_nums = range(len(self._cluster))
+                db_nums = self._cluster.keys()
 
             # The number of commands is based on the total number of executable commands
             num_commands += len(db_nums)
