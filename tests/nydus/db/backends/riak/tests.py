@@ -1,8 +1,10 @@
 from __future__ import absolute_import
 
 import mock
+from httplib import HTTPException
 from inspect import getargspec
 from riak import RiakClient, RiakError
+from socket import error as SocketError
 
 from tests import BaseTest
 
@@ -12,7 +14,7 @@ from nydus.db.base import Cluster, create_cluster
 
 class RiakTest(BaseTest):
     def setUp(self):
-        self.expected = {
+        self.expected_defaults = {
             'host': '127.0.0.1',
             'port': 8098,
             'prefix': 'riak',
@@ -20,25 +22,44 @@ class RiakTest(BaseTest):
             'client_id': None,
         }
         
+        self.modified_props = {
+            'host': '127.0.0.254',
+            'port': 8908,
+            'prefix': 'kair',
+            'mapred_prefix': 'derpam',
+            'client_id': 'MjgxMDg2MzQx',
+        }
+
         self.conn = Riak(num=0)
+        self.modified_conn = Riak(num=1, **self.modified_props)
 
-    def test_init(self):
-        args, _, _, defaults = getargspec(Riak.__init__)
-        args = [arg for arg in args if arg != 'self']
+    def test_init_defaults(self):
+        self.assertDictContainsSubset(self.expected_defaults, self.conn.__dict__)
 
-        self.assertItemsEqual(args, self.expected.keys())
-        self.assertItemsEqual(defaults, self.expected.values())
-
-        self.assertDictContainsSubset(self.expected, self.conn.__dict__)
+    def test_init_properties(self):
+        self.assertDictContainsSubset(self.modified_props, self.modified_conn.__dict__)
 
     def test_identifier(self):
-        self.assertEquals('http://127.0.0.1:8098/riak', self.conn.identifier)
+        expected_identifier = 'http://%(host)s:%(port)s/%(prefix)s' % self.conn.__dict__
+        self.assertEquals(expected_identifier, self.conn.identifier)
+
+    def test_identifier_properties(self):
+        expected_identifier = 'http://%(host)s:%(port)s/%(prefix)s' % self.modified_props
+        self.assertEquals(expected_identifier, self.modified_conn.identifier)
 
     @mock.patch('nydus.db.backends.riak.RiakClient')
     def test_connect_riakclient_options(self, _RiakClient):
         self.conn.connect()
 
-        _RiakClient.assert_called_with(**self.expected)
+        _RiakClient.assert_called_with(host=self.conn.host, port=self.conn.port, prefix=self.conn.prefix, \
+                                        mapred_prefix=self.conn.mapred_prefix, client_id=self.conn.client_id)
+
+    @mock.patch('nydus.db.backends.riak.RiakClient')
+    def test_connect_riakclient_modified_options(self, _RiakClient):
+        self.modified_conn.connect()
+
+        _RiakClient.assert_called_with(host=self.modified_conn.host, port=self.modified_conn.port, prefix=self.modified_conn.prefix, \
+                                        mapred_prefix=self.modified_conn.mapred_prefix, client_id=self.modified_conn.client_id)
 
     def test_connect_returns_riakclient(self):
         client = self.conn.connect()
@@ -46,5 +67,5 @@ class RiakTest(BaseTest):
         self.assertIsInstance(client, RiakClient)
         
     def test_provides_retryable_exceptions(self):
-        self.assertIn(RiakError, self.conn.retryable_exceptions)
+        self.assertItemsEqual([RiakError, HTTPException, SocketError], self.conn.retryable_exceptions)
 
