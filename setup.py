@@ -3,13 +3,14 @@
 from setuptools import setup, find_packages
 
 tests_require = [
-    'nose',
-    'unittest2',
-    'mock',
-    'redis',
     'Django>=1.2,<1.4',
+    'mock',
+    'nose',
     'psycopg2',
+    'redis',
+    'riak',
     'thoonk==1.0.1.0',
+    'unittest2',
 ]
 
 dependency_links = [
