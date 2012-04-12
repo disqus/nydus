@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 
+import sys
 from setuptools import setup, find_packages
+
+if 'nosetests' in sys.argv:
+    setup_requires = ['nose']
+else:
+    setup_requires = []
 
 tests_require = [
     'Django>=1.2,<1.4',
@@ -30,6 +36,7 @@ setup(
     description='Connection utilities',
     packages=find_packages(exclude=('tests',)),
     zip_safe=False,
+    setup_requires=setup_requires,
     install_requires=install_requires,
     dependency_links=dependency_links,
     tests_require=tests_require,
