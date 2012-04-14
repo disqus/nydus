@@ -17,7 +17,7 @@ from nydus.db.backends import BaseConnection
 
 class Thoonk(BaseConnection):
     # Exceptions that can be retried by this backend
-    retryable_exceptions = frozenset(RedisError)
+    retryable_exceptions = frozenset([RedisError])
     supports_pipelines = False
 
     def __init__(self, host='localhost', port=6379, db=0, timeout=None, listen=False, **options):
