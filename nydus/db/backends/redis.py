@@ -9,7 +9,7 @@ nydus.db.backends.redis
 from __future__ import absolute_import
 
 from redis import Redis as RedisClient
-from redis import exceptions as client_exceptions
+from redis import RedisError
 
 from nydus.db.backends import BaseConnection, BasePipeline
 
@@ -30,7 +30,7 @@ class RedisPipeline(BasePipeline):
 
 class Redis(BaseConnection):
     # Exceptions that can be retried by this backend
-    retryable_exceptions = client_exceptions
+    retryable_exceptions = frozenset(RedisError)
     supports_pipelines = True
 
     def __init__(self, host='localhost', port=6379, db=0, timeout=None, **options):
