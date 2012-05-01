@@ -220,7 +220,6 @@ class EventualCommand(object):
     def __delslice__(self, i, j):
         del self._wrapped[i:j]
 
-    __delattr__ = lambda x, n: delattr(x._wrapped, n)
     __lt__ = lambda x, o: x._wrapped < o
     __le__ = lambda x, o: x._wrapped <= o
     __eq__ = lambda x, o: x._wrapped == o
