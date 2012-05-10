@@ -92,6 +92,7 @@ The available host options are:
 * port
 * db
 * timeout
+* password
 
 The Redis client also supports pipelines via the map command. This means that all commands will hit servers at most
 as of once::
