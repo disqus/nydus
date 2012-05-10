@@ -53,7 +53,7 @@ class RedisTest(BaseTest):
         client.connect()
 
         self.assertEquals(RedisClient.call_count, 1)
-        RedisClient.assert_any_call(host='localhost', port=6379, db=0, socket_timeout=None)
+        RedisClient.assert_any_call(host='localhost', port=6379, db=0, socket_timeout=None, password=None)
 
     @mock.patch('nydus.db.backends.redis.RedisClient')
     def test_map_does_pipeline(self, RedisClient):
