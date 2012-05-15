@@ -82,6 +82,7 @@ class Cluster(object):
 
         results = []
         for conn in connections:
+            print conn
             for retry in xrange(self.max_connection_retries):
                 try:
                     results.append(getattr(conn, attr)(*args, **kwargs))
