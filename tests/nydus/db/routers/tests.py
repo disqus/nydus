@@ -14,6 +14,37 @@ from nydus.db.routers import BaseRouter, RoundRobinRouter
 from nydus.db.routers.keyvalue import ConsistentHashingRouter, PartitionRouter
 
 
+class PrefixPartitionTest(TestCase):
+    def test_partitions(self):
+        '''
+        Verify if we write ton one and only one redis database
+        '''
+        from nydus.db import create_cluster
+        import mock
+        engine = 'nydus.db.backends.redis.Redis'
+        router = 'nydus.db.routers.redis.PrefixPartitionRouter'
+        nydus_config = dict(engine=engine, router=router, hosts={
+            'default': {'db': 0, 'host': 'localhost', 'port': 6379},
+            'user:loves:': {'db': 1, 'host': 'localhost', 'port': 6379}
+        })
+        redis = create_cluster(nydus_config)
+        
+        keys = [
+            ('user:loves:test', 1), 
+            ('default_test',0),
+            ('hash:entity:test', 0)
+        ]
+        
+        for key, redis_db in keys:
+            with mock.patch('redis.client.StrictRedis.execute_command') as fake_set:
+                result = redis.set(key, '1')
+                args, kwargs = fake_set.call_args
+                instance, cmd, key, key_value = args 
+                connection_kwargs = instance.connection_pool.connection_kwargs
+                db = connection_kwargs['db']
+                self.assertEqual(db, redis_db)
+
+
 class DummyConnection(BaseConnection):
     def __init__(self, i):
         self.host = 'dummyhost'
