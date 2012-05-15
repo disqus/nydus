@@ -32,6 +32,41 @@ class DummyRouter(BaseRouter):
         return [0]
 
 
+class BrokenRedisTest(BaseTest):
+    def test_broken_redis(self):
+        '''
+        Verify if we write ton one and only one redis database
+        '''
+        from nydus.db import create_cluster
+        import mock
+        
+        engine = 'nydus.db.backends.redis.Redis'
+        router = 'nydus.db.routers.redis.PrefixPartitionRouter'
+        nydus_config = dict(engine=engine, router=router, hosts={
+            'default': {'db': 0, 'host': 'localhost', 'port': 6380, 'fail_silently': True},
+            'user': {'db': 0, 'host': 'localhost', 'port': 6380, 'fail_silently': False},
+        })
+        redis = create_cluster(nydus_config)
+        
+        #test silent failures
+        key = 'default_test'
+        set_result = redis.set(key, '1')
+        assert not set_result
+        result = redis.get(key)
+        assert not result
+        
+        #assert by default we fail loudly
+        from redis.exceptions import ConnectionError
+        try:
+            key = 'user:loves:test'
+            set_result = redis.set(key, '1')
+            result = redis.get(key)
+        except ConnectionError, e:
+            pass
+        else:
+            raise Exception, 'we were hoping for a connection error'
+        
+
 class ClusterTest(BaseTest):
     def test_create_cluster(self):
         c = create_cluster({
