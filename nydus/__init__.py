@@ -11,3 +11,6 @@ try:
         .get_distribution('nydus').version
 except Exception, e:
     VERSION = 'unknown'
+
+#Just make sure we don't clash with the source project
+VERSION = '10.0.0'
