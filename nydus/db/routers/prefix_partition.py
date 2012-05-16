@@ -8,7 +8,7 @@ class PrefixPartitionRouter(BaseRouter):
     
     'redis': {
         'engine': 'nydus.db.backends.redis.Redis',
-        'router': 'django_redis.nydus_router.PrefixPartitionRouter',
+        'router': 'nydus.db.routers.redis.PrefixPartitionRouter',
         'hosts': {
             'default': {'db': 0, 'host': 'default.redis.goteam.be', 'port': 6379},
             'user:loves:': {'db': 1, 'host': 'default.redis.goteam.be', 'port': 6379},
