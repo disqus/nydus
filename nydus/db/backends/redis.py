@@ -33,10 +33,12 @@ class Redis(BaseConnection):
     retryable_exceptions = frozenset([RedisError])
     supports_pipelines = True
 
-    def __init__(self, host='localhost', port=6379, db=0, timeout=None, password=None, **options):
+    def __init__(self, host='localhost', port=6379, db=0, timeout=None,
+        password=None, unix_socket_path=None, **options):
         self.host = host
         self.port = port
         self.db = db
+        self.unix_socket_path = unix_socket_path
         self.timeout = timeout
         self.__password = password
         super(Redis, self).__init__(**options)
@@ -48,7 +50,9 @@ class Redis(BaseConnection):
         return "redis://%(host)s:%(port)s/%(db)s" % mapping
 
     def connect(self):
-        return RedisClient(host=self.host, port=self.port, db=self.db, password=self.__password, socket_timeout=self.timeout)
+        return RedisClient(host=self.host, port=self.port, db=self.db,
+            socket_timeout=self.timeout, password=self.__password,
+            unix_socket_path=self.unix_socket_path)
 
     def disconnect(self):
         self.connection.disconnect()
