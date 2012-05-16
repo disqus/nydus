@@ -33,11 +33,12 @@ class PrefixPartitionRouter(BaseRouter):
                     hosts = [host]
             if not hosts:
                 hosts = ['default']
-        elif func == 'pipeline':
+        elif attr == 'pipeline':
             raise ValueError('Pipelines requires a key for proper routing')
         
         if not hosts:
-            raise ValueError, 'I didnt expect this while writing the code so lets fail'
+            error_message = 'The prefix partition router couldnt find a host for command %s and key %s' % (attr, key)
+            raise ValueError(error_message)
         
         return hosts
         
