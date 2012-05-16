@@ -82,8 +82,7 @@ class Cluster(object):
         connections = self._connections_for(attr, *args, **kwargs)
         results = []
         for conn in connections:
-            conn_options = conn.options
-            fail_silently = conn_options.get('fail_silently', False)
+            fail_silently = conn.fail_silently
             
             for retry in xrange(self.max_connection_retries):
                 try:
