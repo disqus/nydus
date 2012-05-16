@@ -21,11 +21,22 @@ class PrefixPartitionRouter(BaseRouter):
     Use a seperate config if you want hashing based partitioning.
     '''
     
+    def _pre_routing(self, cluster, attr, key, *args, **kwargs):
+        """
+        Requesting a pipeline without a key to partition on is just plain wrong.
+        We raise a valueError if you try
+        """
+        if not key and attr == 'pipeline':
+            raise ValueError('Pipelines requires a key for proper routing')
+        return key
+    
     def _route(self, cluster, attr, key, *args, **kwargs):
         """
         Perform routing and return db_nums
         """
-        assert 'default' in cluster.hosts, 'The prefix router requires a default key to route to'
+        if 'default' not in cluster.hosts:
+            error_message = 'The prefix router requires a default host'
+            raise ValueError(error_message)
         hosts = None
         if key:
             for host in cluster.hosts:
@@ -33,9 +44,8 @@ class PrefixPartitionRouter(BaseRouter):
                     hosts = [host]
             if not hosts:
                 hosts = ['default']
-        elif attr == 'pipeline':
-            raise ValueError('Pipelines requires a key for proper routing')
-        
+            
+        #sanity check, dont see how this can happen
         if not hosts:
             error_message = 'The prefix partition router couldnt find a host for command %s and key %s' % (attr, key)
             raise ValueError(error_message)

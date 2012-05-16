@@ -14,13 +14,9 @@ from nydus.db.routers import BaseRouter, RoundRobinRouter
 from nydus.db.routers.keyvalue import ConsistentHashingRouter, PartitionRouter
 
 
-class PrefixPartitionTest(TestCase):
-    def test_partitions(self):
-        '''
-        Verify if we write ton one and only one redis database
-        '''
+class PrefixPartitionTest(BaseTest):
+    def setUp(self):
         from nydus.db import create_cluster
-        import mock
         engine = 'nydus.db.backends.redis.Redis'
         router = 'nydus.db.routers.redis.PrefixPartitionRouter'
         nydus_config = dict(engine=engine, router=router, hosts={
@@ -28,6 +24,13 @@ class PrefixPartitionTest(TestCase):
             'user:loves:': {'db': 1, 'host': 'localhost', 'port': 6379}
         })
         redis = create_cluster(nydus_config)
+        self.redis = redis
+    
+    def test_partitions(self):
+        '''
+        Verify if we write ton one and only one redis database
+        '''
+        import mock
         
         keys = [
             ('user:loves:test', 1), 
@@ -37,12 +40,35 @@ class PrefixPartitionTest(TestCase):
         
         for key, redis_db in keys:
             with mock.patch('redis.client.StrictRedis.execute_command') as fake_set:
-                result = redis.set(key, '1')
+                result = self.redis.set(key, '1')
                 args, kwargs = fake_set.call_args
                 instance, cmd, key, key_value = args 
                 connection_kwargs = instance.connection_pool.connection_kwargs
                 db = connection_kwargs['db']
                 self.assertEqual(db, redis_db)
+                
+    def test_missing_default(self):
+        from nydus.db import create_cluster
+        from functools import partial
+        
+        engine = 'nydus.db.backends.redis.Redis'
+        router = 'nydus.db.routers.redis.PrefixPartitionRouter'
+        nydus_config = dict(engine=engine, router=router, hosts={
+            'base': {'db': 0, 'host': 'localhost', 'port': 6379},
+            'user:loves:': {'db': 1, 'host': 'localhost', 'port': 6379}
+        })
+        redis = create_cluster(nydus_config)
+        
+        redis_call = partial(redis.get, 'thiswillbreak')
+        self.assertRaises(ValueError, redis_call)
+        
+    def test_pipeline(self):
+        redis = self.redis
+        #we prefer map above direct pipeline usage, but if you really need it:
+        redis.pipeline('default:test')
+        
+        #this should fail as we require a key
+        self.assertRaises(ValueError, redis.pipeline)
 
 
 class DummyConnection(BaseConnection):
