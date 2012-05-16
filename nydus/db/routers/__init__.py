@@ -8,3 +8,4 @@ nydus.db.routers
 
 from .base import BaseRouter, RoundRobinRouter
 
+from .prefix_partition import PrefixPartitionRouter

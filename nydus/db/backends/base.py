@@ -44,6 +44,7 @@ class BaseConnection(object):
     def __init__(self, num, **options):
         self._connection = None
         self.num = num
+        self.options = options
 
     @property
     def identifier(self):

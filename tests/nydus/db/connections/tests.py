@@ -32,6 +32,54 @@ class DummyRouter(BaseRouter):
         return [0]
 
 
+
+class BrokenRedisTest(BaseTest):
+    def setUp(self):
+        from nydus.db import create_cluster
+        engine = 'nydus.db.backends.redis.Redis'
+        router = 'nydus.db.routers.redis.PrefixPartitionRouter'
+        nydus_config = dict(engine=engine, router=router, hosts={
+            'default': {'db': 0, 'host': 'localhost', 'port': 6380, 'fail_silently': False},
+            'simple_cache': {'db': 0, 'host': 'localhost', 'port': 6380, 'fail_silently': True},
+            'app_critical': {'db': 0, 'host': 'localhost', 'port': 6380, 'fail_silently': False},
+        })
+        redis = create_cluster(nydus_config)
+        self.redis = redis
+    
+    def test_broken_redis(self):
+        #test silent failures
+        key = 'simple_cache:test'
+        set_result = self.redis.set(key, '1')
+        assert not set_result
+        result = self.redis.get(key)
+        assert not result
+        
+        #assert by default we fail loudly
+        from redis.exceptions import ConnectionError
+        try:
+            key = 'app_critical:test'
+            set_result = self.redis.set(key, '1')
+            result = self.redis.get(key)
+        except ConnectionError, e:
+            pass
+        else:
+            raise Exception, 'we were hoping for a connection error'
+        
+    def test_map(self):
+        keys = ['simple_cache:test', 'simple_cache:test_two', 'app_critical:test']
+        with self.redis.map() as conn:
+            results = [conn.get(k) for k in keys]
+        
+        for result, key in zip(results, keys):
+            result_object = result._wrapped
+            if 'app_critical' in key:
+                assert 'Error' in result_object
+            else:
+                assert result_object is None, 'we should get None when failing'
+                
+                
+        
+
 class ClusterTest(BaseTest):
     def test_create_cluster(self):
         c = create_cluster({

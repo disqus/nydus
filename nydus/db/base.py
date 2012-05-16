@@ -9,7 +9,8 @@ nydus.db.base
 from collections import defaultdict
 from nydus.db.routers import BaseRouter
 from nydus.utils import import_string, ThreadPool
-
+import logging
+logger = logging.getLogger(__name__)
 
 def create_cluster(settings):
     """
@@ -79,19 +80,37 @@ class Cluster(object):
 
     def _execute(self, attr, args, kwargs):
         connections = self._connections_for(attr, *args, **kwargs)
-
         results = []
         for conn in connections:
+            fail_silently = conn.fail_silently
+            
             for retry in xrange(self.max_connection_retries):
                 try:
                     results.append(getattr(conn, attr)(*args, **kwargs))
                 except tuple(conn.retryable_exceptions), e:
+                    #retry, raise an error or fail silently
+                    error = None
                     if not self.router.retryable:
-                        raise e
+                        error = e
                     elif retry == self.max_connection_retries - 1:
-                        raise self.MaxRetriesExceededError(e)
+                        error = self.MaxRetriesExceededError(e)
                     else:
                         conn = self._connections_for(attr, retry_for=conn.num, *args, **kwargs)[0]
+                        
+                    if error and fail_silently:
+                        #fail silently by returning None, usefull for cache like usage of redis
+                        if self.router.retryable:
+                            logger.error('failing silently after %s retries for conn %s with command %s', self.max_connection_retries, conn, attr)
+                        else:
+                            logger.error('failing silently for conn %s with command %s', conn, attr)
+                        results = [None]
+                        break
+                    else:
+                        raise error
+                    
+                    #going for another retry
+                    logger.warn('retrying connection %s with command %s', conn, attr)
+                    
                 else:
                     break
 

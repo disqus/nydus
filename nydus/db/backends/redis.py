@@ -15,6 +15,8 @@ from nydus.db.backends import BaseConnection, BasePipeline
 
 
 class RedisPipeline(BasePipeline):
+    silent_exceptions = frozenset([RedisError])
+    
     def __init__(self, connection):
         self.pending = []
         self.connection = connection
@@ -25,7 +27,17 @@ class RedisPipeline(BasePipeline):
         getattr(self.pipe, command._attr)(*command._args, **command._kwargs)
 
     def execute(self):
-        return self.pipe.execute()
+        fail_silently = self.connection.fail_silently
+        try:
+            results = self.pipe.execute()
+        except tuple(self.silent_exceptions), e:
+            if fail_silently:
+                results = []
+            else:
+                raise
+            
+        return results
+        
 
 
 class Redis(BaseConnection):
@@ -41,6 +53,7 @@ class Redis(BaseConnection):
         self.unix_socket_path = unix_socket_path
         self.timeout = timeout
         self.__password = password
+        self.fail_silently = options.get('fail_silently', False)
         super(Redis, self).__init__(**options)
 
     @property

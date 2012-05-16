@@ -6,8 +6,8 @@ nydus.db.routers.redis
 :license: Apache License 2.0, see LICENSE for more details.
 """
 
-from nydus.db.routers import RoundRobinRouter
+from nydus.db.routers import RoundRobinRouter, PrefixPartitionRouter
 from nydus.db.routers.keyvalue import ConsistentHashingRouter, PartitionRouter
 
-__all__ = ('ConsistentHashingRouter', 'PartitionRouter', 'RoundRobinRouter')
+__all__ = ('PrefixPartitionRouter', 'ConsistentHashingRouter', 'PartitionRouter', 'RoundRobinRouter')
 
