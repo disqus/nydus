@@ -26,7 +26,7 @@ class DummyConnection(BaseConnection):
 
 
 class DummyRouter(BaseRouter):
-    def get_dbs(self, cluster, attr, args, kwargs, **fkwargs):
+    def get_dbs(self, attr, args, kwargs, **fkwargs):
         if args:
             key = args[0]
         else:
@@ -156,30 +156,19 @@ class FlakeyConnection(DummyConnection):
 class RetryableRouter(DummyRouter):
     retryable = True
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.kwargs_seen = []
         self.key_args_seen = []
-        super(RetryableRouter, self).__init__()
+        super(RetryableRouter, self).__init__(*args, **kwargs)
 
-    def get_dbs(self, cluster, attr, key=None, *args, **kwargs):
-        self.kwargs_seen.append(kwargs)
+    def get_dbs(self, attr, args, kwargs, **fkwargs):
+        if args:
+            key = args[0]
+        else:
+            key = None
+        self.kwargs_seen.append(fkwargs)
         self.key_args_seen.append(key)
         return [0]
-
-
-class InconsistentRouter(DummyRouter):
-    retryable = True
-
-    def __init__(self):
-        self.returned = False
-        super(InconsistentRouter, self).__init__()
-
-    def get_dbs(self, cluster, attr, key=None, *args, **kwargs):
-        if self.returned:
-            return range(5)
-        else:
-            self.returned = True
-            return [0]
 
 
 class ScumbagConnection(DummyConnection):
@@ -209,7 +198,7 @@ class RetryClusterTest(BaseTest):
         cluster = self.build_cluster()
 
         cluster.foo()
-        self.assertEquals({'args': (), 'kwargs': {}, 'retry_for': 0}, cluster.router.kwargs_seen.pop())
+        self.assertEquals({'retry_for': 0}, cluster.router.kwargs_seen.pop())
 
     def test_protection_from_infinate_loops(self):
         cluster = self.build_cluster(connection=ScumbagConnection)

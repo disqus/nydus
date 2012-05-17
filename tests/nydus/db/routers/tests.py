@@ -36,12 +36,11 @@ class BaseRouterTest(BaseTest):
         pass
 
     def setUp(self):
-        self.router = self.Router()
         self.hosts = dict((i, DummyConnection(i)) for i in range(5))
         self.cluster = Cluster(router=self.Router, hosts=self.hosts)
+        self.router = self.cluster.router
 
     def get_dbs(self, *args, **kwargs):
-        kwargs.setdefault('cluster', self.cluster)
         return self.router.get_dbs(*args, **kwargs)
 
     def test_not_ready(self):
@@ -57,19 +56,19 @@ class BaseRouterTest(BaseTest):
                 self.get_dbs(attr='test', args=('foo',))
 
     def test_setup_router_returns_true(self):
-        self.assertTrue(self.router.setup_router(self.cluster))
+        self.assertTrue(self.router.setup_router())
 
     def test_offers_router_interface(self):
         func = _get_func(self.router.get_dbs)
         self.assertTrue(callable(func))
         dbargs, _, _, dbdefaults = getargspec(func)
-        self.assertTrue(set(dbargs) >= set(['self', 'cluster', 'attr', 'args', 'kwargs']))
+        self.assertTrue(set(dbargs) >= set(['self', 'attr', 'args', 'kwargs']))
         self.assertIsNone(dbdefaults)
 
         func = _get_func(self.router.setup_router)
         self.assertTrue(callable(func))
         setupargs, _, _, setupdefaults = getargspec(func)
-        self.assertTrue(set(setupargs) >= set(['self', 'cluster', 'args', 'kwargs']))
+        self.assertTrue(set(setupargs) >= set(['self', 'args', 'kwargs']))
         self.assertIsNone(setupdefaults)
 
     def test_returns_whole_cluster_without_key(self):
@@ -87,18 +86,18 @@ class BaseRouterTest(BaseTest):
 
 class BaseBaseRouterTest(BaseRouterTest):
     def test__setup_router_returns_true(self):
-        self.assertTrue(self.router._setup_router(self.cluster))
+        self.assertTrue(self.router._setup_router())
 
     def test__pre_routing_returns_args_and_kwargs(self):
-        self.assertEqual((('foo',), {}), self.router._pre_routing(self.cluster, 'test', args=('foo',)))
+        self.assertEqual((('foo',), {}), self.router._pre_routing(attr='test', args=('foo',)))
 
     def test__route_returns_first_db_num(self):
-        self.assertEqual(self.cluster.hosts.keys()[0], self.router._route(self.cluster, 'test', args=('foo',))[0])
+        self.assertEqual(self.cluster.hosts.keys()[0], self.router._route(attr='test', args=('foo',))[0])
 
     def test__post_routing_returns_db_nums(self):
         db_nums = self.hosts.keys()
 
-        self.assertEqual(db_nums, self.router._post_routing(self.cluster, 'test', db_nums, args=('foo',)))
+        self.assertEqual(db_nums, self.router._post_routing(attr='test', db_nums=db_nums, args=('foo',)))
 
     def test__handle_exception_raises_same_exception(self):
         e = self.TestException()
@@ -115,7 +114,7 @@ class BaseRoundRobinRouterTest(BaseRouterTest):
 
     def setUp(self):
         super(BaseRoundRobinRouterTest, self).setUp()
-        assert self.router._setup_router(self.cluster)
+        assert self.router._setup_router()
 
     def test_ensure_db_num(self):
         db_num = 0
@@ -156,7 +155,7 @@ class BaseRoundRobinRouterTest(BaseRouterTest):
         self.assertNotIn(db_num, self.router._down_connections)
 
     def test__pre_routing_updates__get_db_attempts(self):
-        self.router._pre_routing(self.cluster, 'test', args=('foo',))
+        self.router._pre_routing(attr='test', args=('foo',))
 
         self.assertEqual(self.router._get_db_attempts, 1)
 
@@ -164,7 +163,7 @@ class BaseRoundRobinRouterTest(BaseRouterTest):
     def test__pre_routing_flush_down_connections(self, _flush_down_connections):
         self.router._get_db_attempts = RoundRobinRouter.attempt_reconnect_threshold + 1
 
-        self.router._pre_routing(self.cluster, 'test', args=('foo',))
+        self.router._pre_routing(attr='test', args=('foo',))
 
         self.assertTrue(_flush_down_connections.called)
 
@@ -172,7 +171,7 @@ class BaseRoundRobinRouterTest(BaseRouterTest):
     def test__pre_routing_retry_for(self, _mark_connection_down):
         db_num = 0
 
-        self.router._pre_routing(self.cluster, 'test', args=('foo',), retry_for=db_num)
+        self.router._pre_routing(attr='test', args=('foo',), retry_for=db_num)
 
         _mark_connection_down.assert_called_with(db_num)
 
@@ -180,18 +179,18 @@ class BaseRoundRobinRouterTest(BaseRouterTest):
     def test__post_routing_mark_connection_up(self, _mark_connection_up):
         db_nums = [0]
 
-        self.assertEqual(self.router._post_routing(self.cluster, 'test', db_nums, args=('foo',)), db_nums)
+        self.assertEqual(self.router._post_routing(attr='test', db_nums=db_nums, args=('foo',)), db_nums)
         _mark_connection_up.assert_called_with(db_nums[0])
 
 
 class RoundRobinRouterTest(BaseRoundRobinRouterTest):
     def test__setup_router(self):
-        self.assertTrue(self.router._setup_router(self.cluster))
+        self.assertTrue(self.router._setup_router())
         self.assertIsInstance(self.router._hosts_cycler, Iterable)
 
     def test__route_cycles_through_keys(self):
         db_nums = self.hosts.keys() * 2
-        results = [self.router._route(self.cluster, 'test', args=('foo',))[0] for _ in db_nums]
+        results = [self.router._route(attr='test', args=('foo',))[0] for _ in db_nums]
 
         self.assertEqual(results, db_nums)
 
@@ -202,7 +201,7 @@ class RoundRobinRouterTest(BaseRoundRobinRouterTest):
 
         self.router.mark_connection_down(db_num)
 
-        db_nums = self.router._route(self.cluster, 'test', args=('foo',))
+        db_nums = self.router._route(attr='test', args=('foo',))
 
         self.assertEqual(db_nums, [db_num])
 
@@ -211,7 +210,7 @@ class RoundRobinRouterTest(BaseRoundRobinRouterTest):
 
         self.router.mark_connection_down(db_num)
 
-        db_nums = self.router._route(self.cluster, 'test', args=('foo',))
+        db_nums = self.router._route(attr='test', args=('foo',))
 
         self.assertNotEqual(db_nums, [db_num])
         self.assertEqual(db_nums, [db_num + 1])
@@ -220,7 +219,7 @@ class RoundRobinRouterTest(BaseRoundRobinRouterTest):
         [self.router.mark_connection_down(db_num) for db_num in self.hosts.keys()]
 
         with self.assertRaises(RoundRobinRouter.HostListExhausted):
-            self.router._route(self.cluster, 'test', args=('foo',))
+            self.router._route(attr='test', args=('foo',))
 
 
 class ConsistentHashingRouterTest(BaseRoundRobinRouterTest):

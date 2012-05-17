@@ -58,7 +58,7 @@ class Cluster(object):
 
     def __init__(self, hosts, router=BaseRouter, max_connection_retries=20):
         self.hosts = hosts
-        self.router = router()
+        self.router = router(self)
         self.max_connection_retries = max_connection_retries
 
     def __len__(self):
@@ -126,7 +126,7 @@ class Cluster(object):
 
     @routing_params
     def _connections_for(self, attr, args, kwargs, **fkwargs):
-        return [self[n] for n in self.router.get_dbs(cluster=self, attr=attr, args=args, kwargs=kwargs, **fkwargs)]
+        return [self[n] for n in self.router.get_dbs(attr=attr, args=args, kwargs=kwargs, **fkwargs)]
 
 
 class CallProxy(object):

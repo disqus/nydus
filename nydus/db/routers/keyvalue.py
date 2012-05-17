@@ -44,14 +44,14 @@ class ConsistentHashingRouter(RoundRobinRouter):
         super(ConsistentHashingRouter, self).mark_connection_up(db_num)
 
     @routing_params
-    def _setup_router(self, cluster, args, kwargs, **fkwargs):
-        self._db_num_id_map = dict([(db_num, host.identifier) for db_num, host in cluster.hosts.iteritems()])
+    def _setup_router(self, args, kwargs, **fkwargs):
+        self._db_num_id_map = dict([(db_num, host.identifier) for db_num, host in self.cluster.hosts.iteritems()])
         self._hash = Ketama(self._db_num_id_map.values())
 
         return True
 
     @routing_params
-    def _route(self, cluster, attr, args, kwargs, **fkwargs):
+    def _route(self, attr, args, kwargs, **fkwargs):
         if args:
             key = args[0]
         else:
@@ -62,15 +62,15 @@ class ConsistentHashingRouter(RoundRobinRouter):
         if not found and len(self._down_connections) > 0:
             raise self.HostListExhausted()
 
-        return [i for i, h in cluster.hosts.iteritems()
+        return [i for i, h in self.cluster.hosts.iteritems()
                 if h.identifier == found]
 
 
 class PartitionRouter(BaseRouter):
     @routing_params
-    def _route(self, cluster, attr, args, kwargs, **fkwargs):
+    def _route(self, attr, args, kwargs, **fkwargs):
         if args:
             key = args[0]
         else:
             key = None
-        return [crc32(str(key)) % len(cluster)]
+        return [crc32(str(key)) % len(self.cluster)]
