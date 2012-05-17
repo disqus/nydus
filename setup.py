@@ -9,7 +9,7 @@ else:
     setup_requires = []
 
 tests_require = [
-    'Django>=1.2,<1.4',
+    'Django>=1.2,<1.5',
     'mock',
     'nose',
     'pep8',
