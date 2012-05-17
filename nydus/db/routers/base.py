@@ -101,7 +101,7 @@ class RoundRobinRouter(BaseRouter):
 
     class InvalidDBNum(Exception):
         pass
-    
+
     # If this router can be retried on if a particular db index it gave out did
     # not work
     retryable = True
@@ -117,7 +117,7 @@ class RoundRobinRouter(BaseRouter):
         self._get_db_attempts = 0
         self._down_connections = {}
 
-        super(RoundRobinRouter,self).__init__(*args, **kwargs)
+        super(RoundRobinRouter, self).__init__(*args, **kwargs)
 
     @classmethod
     def ensure_db_num(cls, db_num):
@@ -169,7 +169,6 @@ class RoundRobinRouter(BaseRouter):
 
     def _post_routing(self, cluster, attr, key, db_nums, *args, **kwargs):
         if db_nums:
-           self.mark_connection_up(db_nums[0])
+            self.mark_connection_up(db_nums[0])
 
         return db_nums
-
