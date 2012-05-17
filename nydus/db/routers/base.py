@@ -55,8 +55,8 @@ class BaseRouter(object):
         :param args: List of arguments being passed to ``attr``.
         :param kwargs: Dictionary of keyword arguments being passed to ``attr``.
 
-        >>> redis = Cluster(...)
-        >>> router = BaseRouter(cluster)
+        >>> redis = Cluster(router=BaseRouter)
+        >>> router = redis.router
         >>> router.get_dbs('incr', args=('key name', 1))
         [0,1,2]
 
