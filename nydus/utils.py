@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, Mapping
 from Queue import Queue, Empty
 from threading import Thread
 
@@ -28,6 +28,40 @@ def import_string(import_name, silent=False):
     except (ImportError, AttributeError):
         if not silent:
             raise
+
+
+class frozendict(Mapping):
+    """
+    An immutable dictionary.
+
+    >>> d = frozendict(foo=bar)
+    >>> d['foo']
+    'bar'
+    >>> d['foo'] = 'bar'
+    (some kind of error saying you cant do this)
+    """
+    def __init__(self, *args, **kwargs):
+        self._d = dict(*args, **kwargs)
+
+    def __repr__(self):
+        return '<%s: %s>' % (type(self).__name__, self._d)
+
+    def __iter__(self):
+        return iter(self._d)
+
+    def __len__(self):
+        return len(self._d)
+
+    def __getitem__(self, key):
+        return self._d[key]
+
+    def __hash__(self):
+        if self._hash is None:
+            self._hash = 0
+            for key, value in self.iteritems():
+                self._hash ^= hash(key)
+                self._hash ^= hash(value)
+        return self._hash
 
 
 class Worker(Thread):

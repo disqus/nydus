@@ -5,11 +5,27 @@ nydus.db.base
 :copyright: (c) 2011 DISQUS.
 :license: Apache License 2.0, see LICENSE for more details.
 """
+
+__all__ = ('BaseRouter', 'RoundRobinRouter', 'routing_params')
+
 import time
 
+from functools import wraps
 from itertools import cycle
 
-__all__ = ('BaseRouter', 'RoundRobinRouter')
+
+def routing_params(func):
+    @wraps(func)
+    def wrapped(*args, **kwargs):
+        if kwargs.get('kwargs') is None:
+            kwargs['kwargs'] = {}
+
+        if kwargs.get('args') is None:
+            kwargs['args'] = ()
+
+        return func(*args, **kwargs)
+    wrapped.__wraps__ = getattr(func, '__wraps__', func)
+    return wrapped
 
 
 class BaseRouter(object):
@@ -24,60 +40,68 @@ class BaseRouter(object):
     def __init__(self, *args, **kwargs):
         self._ready = False
 
-    def get_dbs(self, cluster, attr, key=None, *args, **kwargs):
+    @routing_params
+    def get_dbs(self, cluster, attr, args, kwargs, **fkwargs):
         """
         Perform setup and routing
         Always return an iterable
         Do not overload this method
         """
         if not self._ready:
-            if not self.setup_router(cluster, *args, **kwargs):
+            if not self.setup_router(cluster=cluster, args=args, kwargs=kwargs, **fkwargs):
                 raise self.UnableToSetupRouter()
 
-        key = self._pre_routing(cluster, attr, key, *args, **kwargs)
+        retval = self._pre_routing(cluster, attr, args=args, kwargs=kwargs, **fkwargs)
+        if retval is not None:
+            args, kwargs = retval
 
-        if not key:
+        if not (args or kwargs):
             return cluster.hosts.keys()
 
         try:
-            db_nums = self._route(cluster, attr, key, *args, **kwargs)
+            db_nums = self._route(cluster, attr, args=args, kwargs=kwargs, **fkwargs)
         except Exception, e:
             self._handle_exception(e)
             db_nums = []
 
-        return self._post_routing(cluster, attr, key, db_nums, *args, **kwargs)
+        return self._post_routing(cluster, attr, db_nums, args=args, kwargs=kwargs, **fkwargs)
 
     # Backwards compatibilty
     get_db = get_dbs
 
-    def setup_router(self, cluster, *args, **kwargs):
+    @routing_params
+    def setup_router(self, cluster, args, kwargs, **fkwargs):
         """
         Call method to perform any setup
         """
-        self._ready = self._setup_router(cluster, *args, **kwargs)
+        self._ready = self._setup_router(cluster, args=args, kwargs=kwargs, **fkwargs)
 
         return self._ready
 
-    def _setup_router(self, cluster, *args, **kwargs):
+    @routing_params
+    def _setup_router(self, cluster, args, kwargs, **fkwargs):
         """
         Perform any initialization for the router
         Returns False if setup could not be completed
         """
         return True
 
-    def _pre_routing(self, cluster, attr, key, *args, **kwargs):
+    @routing_params
+    def _pre_routing(self, cluster, attr, args, kwargs, **fkwargs):
         """
         Perform any prerouting with this method and return the key
         """
-        return key
+        return args, kwargs
 
-    def _route(self, cluster, attr, key, *args, **kwargs):
+    @routing_params
+    def _route(self, cluster, attr, args, kwargs, **fkwargs):
         """
         Perform routing and return db_nums
         """
         return cluster.hosts.keys()
 
-    def _post_routing(self, cluster, attr, key, db_nums, *args, **kwargs):
+    @routing_params
+    def _post_routing(self, cluster, attr, db_nums, args, kwargs, **fkwargs):
         """
         Perform any postrouting actions and return db_nums
         """
@@ -138,23 +162,26 @@ class RoundRobinRouter(BaseRouter):
         db_num = self.ensure_db_num(db_num)
         self._down_connections.pop(db_num, None)
 
-    def _setup_router(self, cluster, *args, **kwargs):
+    @routing_params
+    def _setup_router(self, cluster, args, kwargs, **fkwargs):
         self._hosts_cycler = cycle(cluster.hosts.keys())
 
         return True
 
-    def _pre_routing(self, cluster, attr, key, *args, **kwargs):
+    @routing_params
+    def _pre_routing(self, cluster, attr, args, kwargs, retry_for=None, **fkwargs):
         self._get_db_attempts += 1
 
         if self._get_db_attempts > self.attempt_reconnect_threshold:
             self.flush_down_connections()
 
-        if 'retry_for' in kwargs:
-            self.mark_connection_down(kwargs['retry_for'])
+        if retry_for is not None:
+            self.mark_connection_down(retry_for)
 
-        return key
+        return args, kwargs
 
-    def _route(self, cluster, attr, key, *args, **kwargs):
+    @routing_params
+    def _route(self, cluster, attr, args, kwargs, **fkwargs):
         now = time.time()
 
         for i in xrange(len(cluster)):
@@ -167,7 +194,8 @@ class RoundRobinRouter(BaseRouter):
         else:
             raise self.HostListExhausted()
 
-    def _post_routing(self, cluster, attr, key, db_nums, *args, **kwargs):
+    @routing_params
+    def _post_routing(self, cluster, attr, db_nums, args, kwargs, **fkwargs):
         if db_nums:
             self.mark_connection_up(db_nums[0])
 

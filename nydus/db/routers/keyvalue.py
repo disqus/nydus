@@ -9,7 +9,7 @@ nydus.db.routers.keyvalue
 from binascii import crc32
 
 from nydus.contrib.ketama import Ketama
-from nydus.db.routers import BaseRouter, RoundRobinRouter
+from nydus.db.routers import BaseRouter, RoundRobinRouter, routing_params
 
 __all__ = ('ConsistentHashingRouter', 'PartitionRouter')
 
@@ -43,13 +43,20 @@ class ConsistentHashingRouter(RoundRobinRouter):
 
         super(ConsistentHashingRouter, self).mark_connection_up(db_num)
 
-    def _setup_router(self, cluster, *args, **kwargs):
+    @routing_params
+    def _setup_router(self, cluster, args, kwargs, **fkwargs):
         self._db_num_id_map = dict([(db_num, host.identifier) for db_num, host in cluster.hosts.iteritems()])
         self._hash = Ketama(self._db_num_id_map.values())
 
         return True
 
-    def _route(self, cluster, attr, key, *args, **kwargs):
+    @routing_params
+    def _route(self, cluster, attr, args, kwargs, **fkwargs):
+        if args:
+            key = args[0]
+        else:
+            key = None
+
         found = self._hash.get_node(key)
 
         if not found and len(self._down_connections) > 0:
@@ -60,5 +67,10 @@ class ConsistentHashingRouter(RoundRobinRouter):
 
 
 class PartitionRouter(BaseRouter):
-    def _route(self, cluster, attr, key, *args, **kwargs):
+    @routing_params
+    def _route(self, cluster, attr, args, kwargs, **fkwargs):
+        if args:
+            key = args[0]
+        else:
+            key = None
         return [crc32(str(key)) % len(cluster)]

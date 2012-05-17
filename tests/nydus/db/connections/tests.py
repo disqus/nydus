@@ -26,7 +26,11 @@ class DummyConnection(BaseConnection):
 
 
 class DummyRouter(BaseRouter):
-    def get_dbs(self, cluster, attr, key=None, *args, **kwargs):
+    def get_dbs(self, cluster, attr, args, kwargs, **fkwargs):
+        if args:
+            key = args[0]
+        else:
+            key = None
         if key == 'foo':
             return [1]
         return [0]
@@ -157,7 +161,7 @@ class RetryableRouter(DummyRouter):
         self.key_args_seen = []
         super(RetryableRouter, self).__init__()
 
-    def get_dbs(self, cluster, func, key=None, *args, **kwargs):
+    def get_dbs(self, cluster, attr, key=None, *args, **kwargs):
         self.kwargs_seen.append(kwargs)
         self.key_args_seen.append(key)
         return [0]
@@ -170,7 +174,7 @@ class InconsistentRouter(DummyRouter):
         self.returned = False
         super(InconsistentRouter, self).__init__()
 
-    def get_dbs(self, cluster, func, key=None, *args, **kwargs):
+    def get_dbs(self, cluster, attr, key=None, *args, **kwargs):
         if self.returned:
             return range(5)
         else:
@@ -205,7 +209,7 @@ class RetryClusterTest(BaseTest):
         cluster = self.build_cluster()
 
         cluster.foo()
-        self.assertEquals({'retry_for': 0}, cluster.router.kwargs_seen.pop())
+        self.assertEquals({'args': (), 'kwargs': {}, 'retry_for': 0}, cluster.router.kwargs_seen.pop())
 
     def test_protection_from_infinate_loops(self):
         cluster = self.build_cluster(connection=ScumbagConnection)
