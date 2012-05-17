@@ -7,4 +7,3 @@ nydus.db.routers
 """
 
 from .base import BaseRouter, RoundRobinRouter
-

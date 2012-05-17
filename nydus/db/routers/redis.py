@@ -10,4 +10,3 @@ from nydus.db.routers import RoundRobinRouter
 from nydus.db.routers.keyvalue import ConsistentHashingRouter, PartitionRouter
 
 __all__ = ('ConsistentHashingRouter', 'PartitionRouter', 'RoundRobinRouter')
-

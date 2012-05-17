@@ -62,4 +62,3 @@ class ConsistentHashingRouter(RoundRobinRouter):
 class PartitionRouter(BaseRouter):
     def _route(self, cluster, attr, key, *args, **kwargs):
         return [crc32(str(key)) % len(cluster)]
-
