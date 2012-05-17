@@ -12,7 +12,9 @@ tests_require = [
     'Django>=1.2,<1.4',
     'mock',
     'nose',
+    'pep8',
     'psycopg2',
+    'pyflakes',
     'redis',
     'riak',
     'thoonk==1.0.1.0',
@@ -21,6 +23,7 @@ tests_require = [
 
 dependency_links = [
     'https://github.com/andyet/thoonk.py/tarball/master#egg=thoonk',
+    'https://github.com/dcramer/pyflakes/tarball/master#egg=pyflakes',
 ]
 
 

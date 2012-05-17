@@ -1,7 +1,8 @@
 *.pyc
 *.egg-info
-/dist
-/build
 *.gz
 *.egg
 .arcconfig
+.coverage
+/dist
+/build
