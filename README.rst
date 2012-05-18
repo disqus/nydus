@@ -10,10 +10,6 @@ The following example creates a Redis connection cluster which will distribute r
     >>> redis = create_cluster({
     >>>     'engine': 'nydus.db.backends.redis.Redis',
     >>>     'router': 'nydus.db.routers.keyvalue.PartitionRouter',
-    >>>     'defaults': {
-    >>>         'host': 'localhost',
-    >>>         'port': 6379,
-    >>>     },
     >>>     'hosts': {
     >>>         0: {'db': 0},
     >>>         1: {'db': 1},
@@ -38,6 +34,8 @@ There are two required keyword arguments:
 * ``hosts``: a dictionary, where the key is an ordered numeric value, and the result is a dict of connection options.
 
   (the keys are numeric values simply for readability in configuration)
+
+* ``defaults``: a dictionary of default settings for all hosts to inherit from.
 
 Optionally, you may also specify a value for ``router``, which is the full path to the router class,
 which must extend ``nydus.db.routers.BaseRouter``.
