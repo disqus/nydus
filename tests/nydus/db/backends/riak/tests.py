@@ -2,14 +2,10 @@ from __future__ import absolute_import
 
 import mock
 from httplib import HTTPException
-from inspect import getargspec
+from nydus.db.backends.riak import Riak
 from riak import RiakClient, RiakError
 from socket import error as SocketError
-
 from tests import BaseTest
-
-from nydus.db.backends.riak import Riak
-from nydus.db.base import Cluster, create_cluster
 
 
 class RiakTest(BaseTest):
@@ -21,7 +17,7 @@ class RiakTest(BaseTest):
             'mapred_prefix': 'mapred',
             'client_id': None,
         }
-        
+
         self.modified_props = {
             'host': '127.0.0.254',
             'port': 8908,
@@ -65,7 +61,6 @@ class RiakTest(BaseTest):
         client = self.conn.connect()
 
         self.assertIsInstance(client, RiakClient)
-        
+
     def test_provides_retryable_exceptions(self):
         self.assertItemsEqual([RiakError, HTTPException, SocketError], self.conn.retryable_exceptions)
-

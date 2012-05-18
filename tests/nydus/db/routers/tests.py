@@ -8,7 +8,7 @@ from inspect import getargspec
 from mock import patch
 
 from tests import BaseTest
-from nydus.db.base import Cluster
+from nydus.db.base import BaseCluster
 from nydus.db.backends import BaseConnection
 from nydus.db.routers import BaseRouter, RoundRobinRouter
 from nydus.db.routers.keyvalue import ConsistentHashingRouter
@@ -37,7 +37,7 @@ class BaseRouterTest(BaseTest):
 
     def setUp(self):
         self.hosts = dict((i, DummyConnection(i)) for i in range(5))
-        self.cluster = Cluster(router=self.Router, hosts=self.hosts)
+        self.cluster = BaseCluster(router=self.Router, hosts=self.hosts)
         self.router = self.cluster.router
 
     def get_dbs(self, *args, **kwargs):
