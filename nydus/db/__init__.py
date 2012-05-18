@@ -80,5 +80,4 @@ def create_cluster(settings):
         ),
     )
 
-
 connections = LazyConnectionHandler(lambda: conf.CONNECTIONS)
