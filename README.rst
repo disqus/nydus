@@ -10,6 +10,10 @@ The following example creates a Redis connection cluster which will distribute r
     >>> redis = create_cluster({
     >>>     'engine': 'nydus.db.backends.redis.Redis',
     >>>     'router': 'nydus.db.routers.keyvalue.PartitionRouter',
+    >>>     'defaults': {
+    >>>         'host': 'localhost',
+    >>>         'port': 6379,
+    >>>     },
     >>>     'hosts': {
     >>>         0: {'db': 0},
     >>>         1: {'db': 1},
