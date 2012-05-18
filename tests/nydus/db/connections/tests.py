@@ -7,9 +7,9 @@ tests.test_connections
 """
 from __future__ import absolute_import
 
-from mock import Mock
+import mock
 
-from nydus.db.base import Cluster, create_cluster, EventualCommand
+from nydus.db.base import Cluster, create_cluster, EventualCommand, apply_defaults
 from nydus.db.routers.base import BaseRouter
 from nydus.db.routers.keyvalue import get_key
 from nydus.db.backends.base import BaseConnection
@@ -34,8 +34,8 @@ class DummyRouter(BaseRouter):
         return [0]
 
 
-class ClusterTest(BaseTest):
-    def test_create_cluster(self):
+class CreateClusterTest(BaseTest):
+    def test_creates_cluster(self):
         c = create_cluster({
             'engine': DummyConnection,
             'router': DummyRouter,
@@ -45,6 +45,19 @@ class ClusterTest(BaseTest):
         })
         self.assertEquals(len(c), 1)
 
+    @mock.patch('nydus.db.base.apply_defaults')
+    def test_does_call_apply_defaults(self, apply_defaults):
+        create_cluster({
+            'engine': DummyConnection,
+            'defaults': {'foo': 'baz'},
+            'hosts': {
+                0: {'resp': 'bar'},
+            }
+        })
+        apply_defaults.assert_called_once_with({'resp': 'bar'}, {'foo': 'baz'})
+
+
+class ClusterTest(BaseTest):
     def test_init(self):
         c = Cluster(
             hosts={0: BaseConnection(num=1)},
@@ -59,7 +72,7 @@ class ClusterTest(BaseTest):
         self.assertEquals(p.foo(), 'bar')
 
     def test_disconnect(self):
-        c = Mock()
+        c = mock.Mock()
         p = Cluster(
             hosts={0: c},
         )
@@ -232,3 +245,22 @@ class EventualCommandTest(BaseTest):
         ec._set_value('biz')
 
         self.assertEquals(unicode(ec), u'biz')
+
+
+class ApplyDefaultsTest(BaseTest):
+    def test_does_apply(self):
+        host = {'port': 6379}
+        defaults = {'host': 'localhost'}
+        results = apply_defaults(host, defaults)
+        self.assertEquals(results, {
+            'port': 6379,
+            'host': 'localhost',
+        })
+
+    def test_does_not_overwrite(self):
+        host = {'port': 6379}
+        defaults = {'port': 9000}
+        results = apply_defaults(host, defaults)
+        self.assertEquals(results, {
+            'port': 6379,
+        })

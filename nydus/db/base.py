@@ -6,22 +6,40 @@ nydus.db.base
 :license: Apache License 2.0, see LICENSE for more details.
 """
 
+__all__ = ('LazyConnectionHandler', 'create_cluster', 'Cluster')
+
 from collections import defaultdict
 from nydus.db.routers import BaseRouter, routing_params
 from nydus.utils import import_string, ThreadPool
 
 
+def apply_defaults(host, defaults):
+    for key, value in defaults.iteritems():
+        if key not in host:
+            host[key] = value
+    return host
+
+
 def create_cluster(settings):
     """
-    redis = create_cluster({
-        'engine': 'nydus.db.backends.redis.Redis',
-        'router': 'nydus.db.routers.redis.PartitionRouter',
-        'hosts': {
-            0: {'db': 0},
-            1: {'db': 1},
-            2: {'db': 2},
-        }
-    })
+    Creates a new Nydus cluster from the given settings.
+
+    :param settings: Dictionary of the cluster settings.
+    :returns: Configured instance of ``nydus.db.base.Cluster``.
+
+    >>> redis = create_cluster({
+    >>>     'engine': 'nydus.db.backends.redis.Redis',
+    >>>     'router': 'nydus.db.routers.redis.PartitionRouter',
+    >>>     'defaults': {
+    >>>         'host': 'localhost',
+    >>>         'port': 6379,
+    >>>     },
+    >>>     'hosts': {
+    >>>         0: {'db': 0},
+    >>>         1: {'db': 1},
+    >>>         2: {'db': 2},
+    >>>     }
+    >>> })
     """
     # Pull in our client
     if isinstance(settings['engine'], basestring):
@@ -38,11 +56,13 @@ def create_cluster(settings):
     else:
         router = BaseRouter
 
+    defaults = settings.get('defaults', {})
+
     # Build the connection cluster
     return Cluster(
         router=router,
         hosts=dict(
-            (conn_number, Conn(num=conn_number, **host_settings))
+            (conn_number, Conn(num=conn_number, **apply_defaults(host_settings, defaults)))
             for conn_number, host_settings
             in settings['hosts'].iteritems()
         ),
