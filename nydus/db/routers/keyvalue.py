@@ -14,6 +14,14 @@ from nydus.db.routers import BaseRouter, RoundRobinRouter, routing_params
 __all__ = ('ConsistentHashingRouter', 'PartitionRouter')
 
 
+def get_key(args, kwargs):
+    if 'key' in kwargs:
+        return kwargs['key']
+    elif args:
+        return args[0]
+    return None
+
+
 class ConsistentHashingRouter(RoundRobinRouter):
     """
     Router that returns host number based on a consistent hashing algorithm.
@@ -59,10 +67,7 @@ class ConsistentHashingRouter(RoundRobinRouter):
         """
         The first argument is assumed to be the ``key`` for routing.
         """
-        if args:
-            key = args[0]
-        else:
-            key = None
+        key = get_key(args, kwargs)
 
         found = self._hash.get_node(key)
 
@@ -79,8 +84,6 @@ class PartitionRouter(BaseRouter):
         """
         The first argument is assumed to be the ``key`` for routing.
         """
-        if args:
-            key = args[0]
-        else:
-            key = None
+        key = get_key(args, kwargs)
+
         return [crc32(str(key)) % len(self.cluster)]

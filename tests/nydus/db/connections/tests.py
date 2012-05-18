@@ -11,6 +11,7 @@ from mock import Mock
 
 from nydus.db.base import Cluster, create_cluster, EventualCommand
 from nydus.db.routers.base import BaseRouter
+from nydus.db.routers.keyvalue import get_key
 from nydus.db.backends.base import BaseConnection
 
 from tests import BaseTest
@@ -27,10 +28,7 @@ class DummyConnection(BaseConnection):
 
 class DummyRouter(BaseRouter):
     def get_dbs(self, attr, args, kwargs, **fkwargs):
-        if args:
-            key = args[0]
-        else:
-            key = None
+        key = get_key(args, kwargs)
         if key == 'foo':
             return [1]
         return [0]
@@ -162,10 +160,7 @@ class RetryableRouter(DummyRouter):
         super(RetryableRouter, self).__init__(*args, **kwargs)
 
     def get_dbs(self, attr, args, kwargs, **fkwargs):
-        if args:
-            key = args[0]
-        else:
-            key = None
+        key = get_key(args, kwargs)
         self.kwargs_seen.append(fkwargs)
         self.key_args_seen.append(key)
         return [0]
