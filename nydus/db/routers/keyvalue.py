@@ -15,11 +15,15 @@ __all__ = ('ConsistentHashingRouter', 'PartitionRouter')
 
 
 class ConsistentHashingRouter(RoundRobinRouter):
-    '''
+    """
     Router that returns host number based on a consistent hashing algorithm.
     The consistent hashing algorithm only works if a key argument is provided.
+
     If a key is not provided, then all hosts are returned.
-    '''
+
+    The first argument is assumed to be the ``key`` for routing. Keyword arguments
+    are not supported.
+    """
 
     def __init__(self, *args, **kwargs):
         self._db_num_id_map = {}
@@ -52,6 +56,9 @@ class ConsistentHashingRouter(RoundRobinRouter):
 
     @routing_params
     def _route(self, attr, args, kwargs, **fkwargs):
+        """
+        The first argument is assumed to be the ``key`` for routing.
+        """
         if args:
             key = args[0]
         else:
@@ -69,6 +76,9 @@ class ConsistentHashingRouter(RoundRobinRouter):
 class PartitionRouter(BaseRouter):
     @routing_params
     def _route(self, attr, args, kwargs, **fkwargs):
+        """
+        The first argument is assumed to be the ``key`` for routing.
+        """
         if args:
             key = args[0]
         else:
