@@ -7,7 +7,7 @@ nydus.db.base
 """
 
 from collections import defaultdict
-from nydus.db.routers import BaseRouter
+from nydus.db.routers import BaseRouter, routing_params
 from nydus.utils import import_string, ThreadPool
 
 
@@ -58,7 +58,7 @@ class Cluster(object):
 
     def __init__(self, hosts, router=BaseRouter, max_connection_retries=20):
         self.hosts = hosts
-        self.router = router()
+        self.router = router(self)
         self.max_connection_retries = max_connection_retries
 
     def __len__(self):
@@ -78,7 +78,7 @@ class Cluster(object):
             yield name
 
     def _execute(self, attr, args, kwargs):
-        connections = self._connections_for(attr, *args, **kwargs)
+        connections = self._connections_for(attr, args=args, kwargs=kwargs)
 
         results = []
         for conn in connections:
@@ -91,7 +91,7 @@ class Cluster(object):
                     elif retry == self.max_connection_retries - 1:
                         raise self.MaxRetriesExceededError(e)
                     else:
-                        conn = self._connections_for(attr, retry_for=conn.num, *args, **kwargs)[0]
+                        conn = self._connections_for(attr, retry_for=conn.num, args=args, kwargs=kwargs)[0]
                 else:
                     break
 
@@ -114,7 +114,7 @@ class Cluster(object):
         during all steps of the process. An example of this would be
         Redis pipelines.
         """
-        connections = self._connections_for('get_conn', *args, **kwargs)
+        connections = self._connections_for('get_conn', args=args, kwargs=kwargs)
 
         if len(connections) is 1:
             return connections[0]
@@ -124,8 +124,9 @@ class Cluster(object):
     def map(self, workers=None):
         return DistributedContextManager(self, workers)
 
-    def _connections_for(self, attr, *args, **kwargs):
-        return [self[n] for n in self.router.get_dbs(self, attr, *args, **kwargs)]
+    @routing_params
+    def _connections_for(self, attr, args, kwargs, **fkwargs):
+        return [self[n] for n in self.router.get_dbs(attr=attr, args=args, kwargs=kwargs, **fkwargs)]
 
 
 class CallProxy(object):
@@ -306,7 +307,12 @@ class DistributedConnection(object):
             command_map[cmd_ident] = command
 
             if self._cluster.router:
-                db_nums = self._cluster.router.get_dbs(self._cluster, command._attr, *command._args, **command._kwargs)
+                db_nums = self._cluster.router.get_dbs(
+                    cluster=self._cluster,
+                    attr=command._attr,
+                    args=command._args,
+                    kwargs=command._kwargs,
+                )
             else:
                 db_nums = self._cluster.keys()
 

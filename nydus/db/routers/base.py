@@ -5,79 +5,117 @@ nydus.db.base
 :copyright: (c) 2011 DISQUS.
 :license: Apache License 2.0, see LICENSE for more details.
 """
+
+__all__ = ('BaseRouter', 'RoundRobinRouter', 'routing_params')
+
 import time
 
+from functools import wraps
 from itertools import cycle
 
-__all__ = ('BaseRouter', 'RoundRobinRouter')
+
+def routing_params(func):
+    @wraps(func)
+    def wrapped(*args, **kwargs):
+        if kwargs.get('kwargs') is None:
+            kwargs['kwargs'] = {}
+
+        if kwargs.get('args') is None:
+            kwargs['args'] = ()
+
+        return func(*args, **kwargs)
+    wrapped.__wraps__ = getattr(func, '__wraps__', func)
+    return wrapped
 
 
 class BaseRouter(object):
     """
     Handles routing requests to a specific connection in a single cluster.
+
+    For the most part, all public functions will receive arguments as ``key=value``
+    pairs and should expect as much. Functions which receive ``args`` and ``kwargs``
+    from the calling function will receive default values for those, and need not
+    worry about handling missing arguments.
     """
     retryable = False
 
     class UnableToSetupRouter(Exception):
         pass
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, cluster=None, *args, **kwargs):
         self._ready = False
+        self.cluster = cluster
 
-    def get_dbs(self, cluster, attr, key=None, *args, **kwargs):
+    @routing_params
+    def get_dbs(self, attr, args, kwargs, **fkwargs):
         """
-        Perform setup and routing
-        Always return an iterable
-        Do not overload this method
+        Returns a list of db keys to route the given call to.
+
+        :param attr: Name of attribute being called on the connection.
+        :param args: List of arguments being passed to ``attr``.
+        :param kwargs: Dictionary of keyword arguments being passed to ``attr``.
+
+        >>> redis = Cluster(router=BaseRouter)
+        >>> router = redis.router
+        >>> router.get_dbs('incr', args=('key name', 1))
+        [0,1,2]
+
         """
         if not self._ready:
-            if not self.setup_router(cluster, *args, **kwargs):
+            if not self.setup_router(args=args, kwargs=kwargs, **fkwargs):
                 raise self.UnableToSetupRouter()
 
-        key = self._pre_routing(cluster, attr, key, *args, **kwargs)
+        retval = self._pre_routing(attr=attr, args=args, kwargs=kwargs, **fkwargs)
+        if retval is not None:
+            args, kwargs = retval
 
-        if not key:
-            return cluster.hosts.keys()
+        if not (args or kwargs):
+            return self.cluster.hosts.keys()
 
         try:
-            db_nums = self._route(cluster, attr, key, *args, **kwargs)
+            db_nums = self._route(attr=attr, args=args, kwargs=kwargs, **fkwargs)
         except Exception, e:
             self._handle_exception(e)
             db_nums = []
 
-        return self._post_routing(cluster, attr, key, db_nums, *args, **kwargs)
+        return self._post_routing(attr=attr, db_nums=db_nums, args=args, kwargs=kwargs, **fkwargs)
 
     # Backwards compatibilty
     get_db = get_dbs
 
-    def setup_router(self, cluster, *args, **kwargs):
+    @routing_params
+    def setup_router(self, args, kwargs, **fkwargs):
         """
         Call method to perform any setup
         """
-        self._ready = self._setup_router(cluster, *args, **kwargs)
+        self._ready = self._setup_router(args=args, kwargs=kwargs, **fkwargs)
 
         return self._ready
 
-    def _setup_router(self, cluster, *args, **kwargs):
+    @routing_params
+    def _setup_router(self, args, kwargs, **fkwargs):
         """
         Perform any initialization for the router
         Returns False if setup could not be completed
         """
         return True
 
-    def _pre_routing(self, cluster, attr, key, *args, **kwargs):
+    @routing_params
+    def _pre_routing(self, attr, args, kwargs, **fkwargs):
         """
         Perform any prerouting with this method and return the key
         """
-        return key
+        return args, kwargs
 
-    def _route(self, cluster, attr, key, *args, **kwargs):
+    @routing_params
+    def _route(self, attr, args, kwargs, **fkwargs):
         """
         Perform routing and return db_nums
         """
-        return cluster.hosts.keys()
+        return self.cluster.hosts.keys()
 
-    def _post_routing(self, cluster, attr, key, db_nums, *args, **kwargs):
+    @routing_params
+    def _post_routing(self, attr, db_nums, args, kwargs, **fkwargs):
         """
         Perform any postrouting actions and return db_nums
         """
@@ -138,26 +176,29 @@ class RoundRobinRouter(BaseRouter):
         db_num = self.ensure_db_num(db_num)
         self._down_connections.pop(db_num, None)
 
-    def _setup_router(self, cluster, *args, **kwargs):
-        self._hosts_cycler = cycle(cluster.hosts.keys())
+    @routing_params
+    def _setup_router(self, args, kwargs, **fkwargs):
+        self._hosts_cycler = cycle(self.cluster.hosts.keys())
 
         return True
 
-    def _pre_routing(self, cluster, attr, key, *args, **kwargs):
+    @routing_params
+    def _pre_routing(self, attr, args, kwargs, retry_for=None, **fkwargs):
         self._get_db_attempts += 1
 
         if self._get_db_attempts > self.attempt_reconnect_threshold:
             self.flush_down_connections()
 
-        if 'retry_for' in kwargs:
-            self.mark_connection_down(kwargs['retry_for'])
+        if retry_for is not None:
+            self.mark_connection_down(retry_for)
 
-        return key
+        return args, kwargs
 
-    def _route(self, cluster, attr, key, *args, **kwargs):
+    @routing_params
+    def _route(self, attr, args, kwargs, **fkwargs):
         now = time.time()
 
-        for i in xrange(len(cluster)):
+        for i in xrange(len(self.cluster)):
             db_num = self._hosts_cycler.next()
 
             marked_down_at = self._down_connections.get(db_num, False)
@@ -167,7 +208,8 @@ class RoundRobinRouter(BaseRouter):
         else:
             raise self.HostListExhausted()
 
-    def _post_routing(self, cluster, attr, key, db_nums, *args, **kwargs):
+    @routing_params
+    def _post_routing(self, attr, db_nums, args, kwargs, **fkwargs):
         if db_nums:
             self.mark_connection_up(db_nums[0])
 
