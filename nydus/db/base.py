@@ -371,11 +371,6 @@ class LazyConnectionHandler(dict):
             self.reload()
         return super(LazyConnectionHandler, self).__getitem__(key)
 
-    def __getattr__(self, key):
-        if not self.is_ready():
-            self.reload()
-        return super(LazyConnectionHandler, self).__getattr__(key)
-
     def is_ready(self):
         return self._is_ready
         # if self.conf_settings != self.conf_callback():
