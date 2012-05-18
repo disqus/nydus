@@ -41,21 +41,25 @@ class BaseCluster(object):
         for name in self.hosts.iterkeys():
             yield name
 
-    def _execute(self, attr, args, kwargs):
-        connections = self._connections_for(attr, args=args, kwargs=kwargs)
+    def _execute(self, path, args, kwargs):
+        connections = self._connections_for(path, args=args, kwargs=kwargs)
 
         results = []
         for conn in connections:
+            func = conn
+            for piece in path.split('.'):
+                func = getattr(func, piece)
+
             for retry in xrange(self.max_connection_retries):
                 try:
-                    results.append(getattr(conn, attr)(*args, **kwargs))
+                    results.append(func(*args, **kwargs))
                 except tuple(conn.retryable_exceptions), e:
                     if not self.router.retryable:
                         raise e
                     elif retry == self.max_connection_retries - 1:
                         raise self.MaxRetriesExceededError(e)
                     else:
-                        conn = self._connections_for(attr, retry_for=conn.num, args=args, kwargs=kwargs)[0]
+                        conn = self._connections_for(path, retry_for=conn.num, args=args, kwargs=kwargs)[0]
                 else:
                     break
 
@@ -97,12 +101,17 @@ class CallProxy(object):
     """
     Handles routing function calls to the proper connection.
     """
-    def __init__(self, cluster, attr):
+    def __init__(self, cluster, path):
         self._cluster = cluster
-        self._attr = attr
+        self._path = path
 
     def __call__(self, *args, **kwargs):
-        return self._cluster._execute(self._attr, args, kwargs)
+        return self._cluster._execute(self._path, args, kwargs)
+
+    def __getattr__(self, name):
+        if name in self.__dict__:
+            return self.__dict__[name]
+        return CallProxy(self._cluster, self._path + '.' + name)
 
 
 class EventualCommand(object):
