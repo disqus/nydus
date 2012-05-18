@@ -2,8 +2,9 @@ from __future__ import absolute_import
 
 from tests import BaseTest
 
+from nydus.db import create_cluster
+from nydus.db.base import BaseCluster
 from nydus.db.backends.redis import Redis
-from nydus.db.base import Cluster, create_cluster
 import mock
 import redis
 
@@ -18,7 +19,7 @@ class RedisTest(BaseTest):
         self.assertEquals(self.redis.incr('RedisTest_proxy'), 1)
 
     def test_with_cluster(self):
-        p = Cluster(
+        p = BaseCluster(
             hosts={0: self.redis},
         )
         self.assertEquals(p.incr('RedisTest_with_cluster'), 1)
