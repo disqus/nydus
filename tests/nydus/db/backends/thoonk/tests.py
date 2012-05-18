@@ -1,12 +1,12 @@
 from __future__ import absolute_import
 
-from nydus.db.backends.thoonk import Thoonk
-from nydus.db.base import create_cluster
 import unittest2
+from nydus.db.backends.thoonk import Thoonk
+from nydus.db import create_cluster
 from uuid import uuid4
 
 
-class TestThoonkPubsub(unittest2.TestCase):
+class ThoonkTest(unittest2.TestCase):
     """docstring for ThoonkPubsub"""
     def get_rand_name(self, prefix=None, suffix=None):
         return prefix if prefix else "" + uuid4.hex + suffix if suffix else ""
@@ -92,6 +92,3 @@ class TestThoonkPubsub(unittest2.TestCase):
             ps = pubsub.get_conn('testjob')
             jps = ps.job('testjob')
             self.assertEqual(jps.get_ids(), [])
-
-
-test_suite = TestThoonkPubsub

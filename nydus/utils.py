@@ -30,6 +30,13 @@ def import_string(import_name, silent=False):
             raise
 
 
+def apply_defaults(host, defaults):
+    for key, value in defaults.iteritems():
+        if key not in host:
+            host[key] = value
+    return host
+
+
 class Worker(Thread):
     def __init__(self, queue):
         Thread.__init__(self)

@@ -9,10 +9,12 @@ from __future__ import absolute_import
 
 import mock
 
-from nydus.db.base import Cluster, create_cluster, EventualCommand, apply_defaults
+from nydus.db import create_cluster
+from nydus.db.base import BaseCluster, EventualCommand
 from nydus.db.routers.base import BaseRouter
 from nydus.db.routers.keyvalue import get_key
 from nydus.db.backends.base import BaseConnection
+from nydus.utils import apply_defaults
 
 from tests import BaseTest
 
@@ -45,7 +47,7 @@ class CreateClusterTest(BaseTest):
         })
         self.assertEquals(len(c), 1)
 
-    @mock.patch('nydus.db.base.apply_defaults')
+    @mock.patch('nydus.db.apply_defaults')
     def test_does_call_apply_defaults(self, apply_defaults):
         create_cluster({
             'engine': DummyConnection,
@@ -59,21 +61,21 @@ class CreateClusterTest(BaseTest):
 
 class ClusterTest(BaseTest):
     def test_init(self):
-        c = Cluster(
+        c = BaseCluster(
             hosts={0: BaseConnection(num=1)},
         )
         self.assertEquals(len(c), 1)
 
     def test_proxy(self):
         c = DummyConnection(num=1, resp='bar')
-        p = Cluster(
+        p = BaseCluster(
             hosts={0: c},
         )
         self.assertEquals(p.foo(), 'bar')
 
     def test_disconnect(self):
         c = mock.Mock()
-        p = Cluster(
+        p = BaseCluster(
             hosts={0: c},
         )
         p.disconnect()
@@ -85,7 +87,7 @@ class ClusterTest(BaseTest):
 
         # test dummy router
         r = DummyRouter
-        p = Cluster(
+        p = BaseCluster(
             hosts={0: c, 1: c2},
             router=r,
         )
@@ -93,7 +95,7 @@ class ClusterTest(BaseTest):
         self.assertEquals(p.foo('foo'), 'bar')
 
         # test default routing behavior
-        p = Cluster(
+        p = BaseCluster(
             hosts={0: c, 1: c2},
         )
         self.assertEquals(p.foo(), ['foo', 'bar'])
@@ -105,7 +107,7 @@ class ClusterTest(BaseTest):
 
         # test dummy router
         r = DummyRouter
-        p = Cluster(
+        p = BaseCluster(
             hosts={0: c, 1: c2},
             router=r,
         )
@@ -113,7 +115,7 @@ class ClusterTest(BaseTest):
         self.assertEquals(p.get_conn('foo'), c2)
 
         # test default routing behavior
-        p = Cluster(
+        p = BaseCluster(
             hosts={0: c, 1: c2},
         )
         self.assertEquals(p.get_conn(), [c, c2])
@@ -125,7 +127,7 @@ class ClusterTest(BaseTest):
 
         # test dummy router
         r = DummyRouter
-        p = Cluster(
+        p = BaseCluster(
             hosts={0: c, 1: c2},
             router=r,
         )
@@ -139,7 +141,7 @@ class ClusterTest(BaseTest):
         self.assertEquals(foo, 'foo')
 
         # test default routing behavior
-        p = Cluster(
+        p = BaseCluster(
             hosts={0: c, 1: c2},
         )
         with p.map() as conn:
