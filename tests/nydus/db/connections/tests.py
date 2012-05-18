@@ -11,6 +11,7 @@ from mock import Mock
 
 from nydus.db.base import Cluster, create_cluster, EventualCommand
 from nydus.db.routers.base import BaseRouter
+from nydus.db.routers.keyvalue import get_key
 from nydus.db.backends.base import BaseConnection
 
 from tests import BaseTest
@@ -26,7 +27,8 @@ class DummyConnection(BaseConnection):
 
 
 class DummyRouter(BaseRouter):
-    def get_dbs(self, cluster, attr, key=None, *args, **kwargs):
+    def get_dbs(self, attr, args, kwargs, **fkwargs):
+        key = get_key(args, kwargs)
         if key == 'foo':
             return [1]
         return [0]
@@ -152,30 +154,16 @@ class FlakeyConnection(DummyConnection):
 class RetryableRouter(DummyRouter):
     retryable = True
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.kwargs_seen = []
         self.key_args_seen = []
-        super(RetryableRouter, self).__init__()
+        super(RetryableRouter, self).__init__(*args, **kwargs)
 
-    def get_dbs(self, cluster, func, key=None, *args, **kwargs):
-        self.kwargs_seen.append(kwargs)
+    def get_dbs(self, attr, args, kwargs, **fkwargs):
+        key = get_key(args, kwargs)
+        self.kwargs_seen.append(fkwargs)
         self.key_args_seen.append(key)
         return [0]
-
-
-class InconsistentRouter(DummyRouter):
-    retryable = True
-
-    def __init__(self):
-        self.returned = False
-        super(InconsistentRouter, self).__init__()
-
-    def get_dbs(self, cluster, func, key=None, *args, **kwargs):
-        if self.returned:
-            return range(5)
-        else:
-            self.returned = True
-            return [0]
 
 
 class ScumbagConnection(DummyConnection):

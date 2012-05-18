@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import defaultdict, Mapping
 from Queue import Queue, Empty
 from threading import Thread
 
