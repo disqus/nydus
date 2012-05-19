@@ -6,7 +6,7 @@ Disqus generic connections wrappers.
 
 >>> from nydus.db import create_cluster
 >>> redis = create_cluster({
->>>     'engine': 'nydus.db.backends.redis.Redis',
+>>>     'backend': 'nydus.db.backends.redis.Redis',
 >>> })
 >>> res = conn.incr('foo')
 >>> assert res == 1
@@ -31,7 +31,7 @@ def create_cluster(settings):
     :returns: Configured instance of ``nydus.db.base.Cluster``.
 
     >>> redis = create_cluster({
-    >>>     'engine': 'nydus.db.backends.redis.Redis',
+    >>>     'backend': 'nydus.db.backends.redis.Redis',
     >>>     'router': 'nydus.db.routers.redis.PartitionRouter',
     >>>     'defaults': {
     >>>         'host': 'localhost',
@@ -54,10 +54,13 @@ def create_cluster(settings):
         Conn = cluster
 
     # Pull in our client
-    if isinstance(settings['engine'], basestring):
-        Conn = import_string(settings['engine'])
+    backend = settings.get('engine', settings.get('backend'))
+    if isinstance(backend, basestring):
+        Conn = import_string(backend)
+    elif backend:
+        Conn = backend
     else:
-        Conn = settings['engine']
+        raise KeyError('backend')
 
     # Pull in our router
     router = settings.get('router')

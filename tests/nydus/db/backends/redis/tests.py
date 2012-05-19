@@ -32,7 +32,7 @@ class RedisTest(BaseTest):
 
     def test_pipelined_map(self):
         redis = create_cluster({
-            'engine': 'nydus.db.backends.redis.Redis',
+            'backend': 'nydus.db.backends.redis.Redis',
             'router': 'nydus.db.routers.keyvalue.PartitionRouter',
             'hosts': {
                 0: {'db': 5},
@@ -60,7 +60,7 @@ class RedisTest(BaseTest):
     @mock.patch('nydus.db.backends.redis.RedisClient')
     def test_map_does_pipeline(self, RedisClient):
         redis = create_cluster({
-            'engine': 'nydus.db.backends.redis.Redis',
+            'backend': 'nydus.db.backends.redis.Redis',
             'router': 'nydus.db.routers.keyvalue.PartitionRouter',
             'hosts': {
                 0: {'db': 0},

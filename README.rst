@@ -8,7 +8,7 @@ The following example creates a Redis connection cluster which will distribute r
     >>> from nydus.db import create_cluster
     >>>
     >>> redis = create_cluster({
-    >>>     'engine': 'nydus.db.backends.redis.Redis',
+    >>>     'backend': 'nydus.db.backends.redis.Redis',
     >>>     'router': 'nydus.db.routers.keyvalue.PartitionRouter',
     >>>     'hosts': {
     >>>         0: {'db': 0},
@@ -29,7 +29,7 @@ The create_cluster function is a simple helper to configure a ``Cluster`` based 
 
 There are two required keyword arguments:
 
-* ``engine``: full path to the backend class, which should extend ``nydus.db.backends.BaseConnection``.
+* ``backend``: full path to the backend class, which should extend ``nydus.db.backends.BaseConnection``.
 
 * ``hosts``: a dictionary, where the key is an ordered numeric value, and the result is a dict of connection options.
 
@@ -50,7 +50,7 @@ returns a cluster of nodes::
     >>>
     >>> # by not specifying a router all queries are executed on all hosts
     >>> redis = create_cluster({
-    >>>     'engine': 'nydus.db.backends.redis.Redis',
+    >>>     'backend': 'nydus.db.backends.redis.Redis',
     >>>     'hosts': {
     >>>         0: {'db': 0},
     >>>         1: {'db': 1},
@@ -82,7 +82,7 @@ for routing and querying on Redis clusters.
 You can configure the Redis client for a connection by specifying it's full path::
 
     >>> redis = create_cluster({
-    >>>     'engine': 'nydus.db.backends.redis.Redis',
+    >>>     'backend': 'nydus.db.backends.redis.Redis',
     >>>     'hosts': {
     >>>         0: {'db': 0},
     >>>     },
@@ -113,7 +113,7 @@ There are also several options for builtin routing. The easiest is a simple part
 hash on the key::
 
     >>> redis = create_cluster({
-    >>>     'engine': 'nydus.db.backends.redis.Redis',
+    >>>     'backend': 'nydus.db.backends.redis.Redis',
     >>>     'router': 'nydus.db.routers.keyvalue.PartitionRouter',
     >>>     'hosts': {
     >>>         0: {'db': 0},
@@ -126,7 +126,7 @@ Consistent Hashing Router
 An improvement upon hashing, Nydus provides a Ketama-based consistent hashing router::
 
     >>> redis = create_cluster({
-    >>>     'engine': 'nydus.db.backends.redis.Redis',
+    >>>     'backend': 'nydus.db.backends.redis.Redis',
     >>>     'router': 'nydus.db.routers.keyvalue.ConsistentHashingRouter',
     >>>     'hosts': {
     >>>         0: {'db': 0},
@@ -139,7 +139,7 @@ Round Robin Router
 An additional option for distributing queries is the round robin router::
 
     >>> redis = create_cluster({
-    >>>     'engine': 'nydus.db.backends.redis.Redis',
+    >>>     'backend': 'nydus.db.backends.redis.Redis',
     >>>     'router': 'nydus.db.routers.RoundRobinRouter',
     >>>     'hosts': {
     >>>         0: {'db': 0},

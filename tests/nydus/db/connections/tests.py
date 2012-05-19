@@ -39,7 +39,7 @@ class DummyRouter(BaseRouter):
 class CreateClusterTest(BaseTest):
     def test_creates_cluster(self):
         c = create_cluster({
-            'engine': DummyConnection,
+            'backend': DummyConnection,
             'router': DummyRouter,
             'hosts': {
                 0: {'resp': 'bar'},
@@ -50,7 +50,7 @@ class CreateClusterTest(BaseTest):
     @mock.patch('nydus.db.apply_defaults')
     def test_does_call_apply_defaults(self, apply_defaults):
         create_cluster({
-            'engine': DummyConnection,
+            'backend': DummyConnection,
             'defaults': {'foo': 'baz'},
             'hosts': {
                 0: {'resp': 'bar'},
@@ -193,7 +193,7 @@ class RetryClusterTest(BaseTest):
 
     def build_cluster(self, connection=FlakeyConnection, router=RetryableRouter):
         return create_cluster({
-            'engine': connection,
+            'backend': connection,
             'router': router,
             'hosts': {
                 0: {'resp': 'bar'},

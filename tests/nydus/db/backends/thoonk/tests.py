@@ -13,7 +13,7 @@ class ThoonkTest(unittest2.TestCase):
 
     def get_cluster(self, router):
         cluster = create_cluster({
-            'engine': 'nydus.db.backends.thoonk.Thoonk',
+            'backend': 'nydus.db.backends.thoonk.Thoonk',
             'router': router,
             'hosts': {
                 0: {'db': 5},
