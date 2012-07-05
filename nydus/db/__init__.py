@@ -49,9 +49,9 @@ def create_cluster(settings):
     if not cluster:
         Cluster = BaseCluster
     elif isinstance(cluster, basestring):
-        Conn = import_string(cluster)
+        Cluster = import_string(cluster)
     else:
-        Conn = cluster
+        Cluster = cluster
 
     # Pull in our client
     backend = settings.get('engine', settings.get('backend'))
