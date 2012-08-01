@@ -49,7 +49,7 @@ class ConsistentHashingRouter(RoundRobinRouter):
 
         super(ConsistentHashingRouter, self).mark_connection_down(db_num)
 
-    def mark_conenction_up(self, db_num):
+    def mark_connection_up(self, db_num):
         db_num = self.ensure_db_num(db_num)
         self._hash.add_node(self._db_num_id_map[db_num])
 
