@@ -12,7 +12,7 @@ tests_require = [
     'Django>=1.2,<1.5',
     'mock',
     'nose',
-    'pep8',
+    'flake8',
     'psycopg2',
     'pyflakes',
     'redis',
