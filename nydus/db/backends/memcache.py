@@ -10,12 +10,12 @@ from __future__ import absolute_import
 
 import pylibmc
 
-from nydus.db.backends import BaseConnection
+from nydus.db.backends import BaseConnection, BasePipeline
 
 class Memcache(BaseConnection):
 
     retryable_exceptions = frozenset([pylibmc.Error])
-    supports_pipelines = False
+    supports_pipelines = True
 
     def __init__(self, host='localhost', port=11211, binary=True,
             behaviors=None, **options):
@@ -36,3 +36,21 @@ class Memcache(BaseConnection):
 
     def disconnect(self):
         self.connection.disconnect_all()
+
+    def get_pipeline(self, *args, **kwargs):
+        return MemcachePipeline(self)
+
+class MemcachePipeline(BasePipeline):
+    def __init__(self, connection):
+        self.pending = []
+        self.connection = connection
+
+    def add(self, command):
+        self.pending.append(command)
+
+    def execute(self):
+        ret = []
+        for command in self.pending:
+            ret.append(command._execute(self.connection))
+
+        return ret

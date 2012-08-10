@@ -34,18 +34,27 @@ class MemcacheTest(BaseTest):
         self.assertEquals(p.get('MemcacheTest_with_cluster'), None)
 
     @mock.patch('pylibmc.Client')
-    def test_map(self, Client):
+    def test_map_does_pipeline(self, Client):
         cluster = create_cluster({
             'engine': 'nydus.db.backends.memcache.Memcache',
-            'router': 'nydus.db.routers.keyvalue.PartitionRouter',
+            'router': 'nydus.db.routers.RoundRobinRouter',
             'hosts': {
-                0: {'db': 0},
-                1: {'db': 1},
+                0: {'binary': True},
+                1: {'binary': True},
+                2: {'binary': True},
+                3: {'binary': True},
             }
         })
 
         with cluster.map() as conn:
             conn.set('a', 1)
             conn.set('b', 2)
+            conn.set('c', 3)
+            conn.set('d', 4)
+            conn.set('e', 5)
+            conn.set('f', 6)
+            conn.set('g', 7)
 
-        self.assertTrue(Client().set.called)
+        self.assertEqual(Client().set.call_count, 7)
+        self.assertEqual(Client.call_count, 5)
+        self.assertEqual(len(conn.get_results()), 7)
