@@ -15,6 +15,7 @@ tests_require = [
     'flake8',
     'psycopg2',
     'pyflakes',
+    'pylibmc',
     'redis',
     'riak',
     'thoonk==1.0.1.0',
