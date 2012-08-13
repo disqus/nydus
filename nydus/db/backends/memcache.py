@@ -11,6 +11,7 @@ from __future__ import absolute_import
 import pylibmc
 
 from nydus.db.backends import BaseConnection, BasePipeline
+from nydus.db.base import EventualCommand
 
 class Memcache(BaseConnection):
 
@@ -46,7 +47,22 @@ class MemcachePipeline(BasePipeline):
         self.connection = connection
 
     def add(self, command):
-        self.pending.append(command)
+        # A feature of Memcache is a 'get_multi' command. Therefore we can merge
+        # consecutive 'get' commands into one 'get_multi' command.
+
+        # Need to merge this into one command
+        if command._attr == 'get':
+            if self.pending and self.pending[-1]._attr == 'get_multi':
+                self.pending[-1]._args[0].append(command._args[0])
+
+            else:
+                key = command._args[0]
+                multi_command = EventualCommand('get_multi')
+                multi_command([key])
+                self.pending.append(multi_command)
+
+        else:
+            self.pending.append(command)
 
     def execute(self):
         ret = []

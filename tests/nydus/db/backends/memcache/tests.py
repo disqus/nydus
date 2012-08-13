@@ -58,3 +58,26 @@ class MemcacheTest(BaseTest):
         self.assertEqual(Client().set.call_count, 7)
         self.assertEqual(Client.call_count, 5)
         self.assertEqual(len(conn.get_results()), 7)
+
+    @mock.patch('pylibmc.Client')
+    def test_pipeline_get_multi(self, Client):
+        cluster = create_cluster({
+            'engine': 'nydus.db.backends.memcache.Memcache',
+            'router': 'nydus.db.routers.RoundRobinRouter',
+            'hosts': {
+                0: {'binary': True},
+                1: {'binary': True},
+            }
+        })
+
+        keys = ['a', 'b', 'c', 'd', 'e', 'f']
+        with cluster.map() as conn:
+            for key in keys:
+                conn.get(key)
+
+        self.assertEqual(len(conn.get_results()), len(keys))
+        print conn.get_results()
+        self.assertEqual(Client().get.call_count, 0)
+        # Note: This is two because it should execute the command once for each
+        # of the two servers.
+        self.assertEqual(Client().get_multi.call_count, 2)
