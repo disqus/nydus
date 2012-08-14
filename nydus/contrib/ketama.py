@@ -50,9 +50,9 @@ class Ketama(object):
 
                 for l in xrange(0, 4):
                     key = ((b_key[3 + l * 4] << 24)
-                         | (b_key[2 + l * 4] << 16)
-                         | (b_key[1 + l * 4] << 8)
-                         | b_key[l * 4])
+                           | (b_key[2 + l * 4] << 16)
+                           | (b_key[1 + l * 4] << 8)
+                           | b_key[l * 4])
 
                     self._hashring[key] = node
                     self._sorted_keys.append(key)
@@ -85,9 +85,9 @@ class Ketama(object):
 
     def _hashi(self, b_key, fn):
         return ((b_key[fn(3)] << 24)
-              | (b_key[fn(2)] << 16)
-              | (b_key[fn(1)] << 8)
-              | b_key[fn(0)])
+                | (b_key[fn(2)] << 16)
+                | (b_key[fn(1)] << 8)
+                | b_key[fn(0)])
 
     def _md5_digest(self, key):
         return map(ord, hashlib.md5(key).digest())
@@ -143,10 +143,11 @@ if __name__ == '__main__':
         print k.get_node('Data')
         print k.get_node('Computer')
 
-    NODES = ['192.168.0.1:6000', '192.168.0.1:6001', '192.168.0.1:6002',
-            '192.168.0.1:6003', '192.168.0.1:6004', '192.168.0.1:6005',
-            '192.168.0.1:6006', '192.168.0.1:6008', '192.168.0.1:6007'
-           ]
+    NODES = [
+        '192.168.0.1:6000', '192.168.0.1:6001', '192.168.0.1:6002',
+        '192.168.0.1:6003', '192.168.0.1:6004', '192.168.0.1:6005',
+        '192.168.0.1:6006', '192.168.0.1:6008', '192.168.0.1:6007'
+    ]
     REQUESTS = 1000
 
     k = Ketama(NODES)

@@ -34,7 +34,7 @@ class Redis(BaseConnection):
     supports_pipelines = True
 
     def __init__(self, host='localhost', port=6379, db=0, timeout=None,
-        password=None, unix_socket_path=None, **options):
+                 password=None, unix_socket_path=None, **options):
         self.host = host
         self.port = port
         self.db = db
@@ -50,7 +50,8 @@ class Redis(BaseConnection):
         return "redis://%(host)s:%(port)s/%(db)s" % mapping
 
     def connect(self):
-        return RedisClient(host=self.host, port=self.port, db=self.db,
+        return RedisClient(
+            host=self.host, port=self.port, db=self.db,
             socket_timeout=self.timeout, password=self.__password,
             unix_socket_path=self.unix_socket_path)
 

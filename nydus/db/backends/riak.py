@@ -35,8 +35,9 @@ class Riak(BaseConnection):
         return "http://%(host)s:%(port)s/%(prefix)s" % mapping
 
     def connect(self):
-        return RiakClient(host=self.host, port=self.port, prefix=self.prefix,\
-                mapred_prefix=self.mapred_prefix, client_id=self.client_id)
+        return RiakClient(
+            host=self.host, port=self.port, prefix=self.prefix,
+            mapred_prefix=self.mapred_prefix, client_id=self.client_id)
 
     def disconnect(self):
         pass
