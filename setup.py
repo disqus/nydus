@@ -3,6 +3,11 @@
 import sys
 from setuptools import setup, find_packages
 
+try:
+    import multiprocessing  # NOQA
+except:
+    pass
+
 if 'nosetests' in sys.argv:
     setup_requires = ['nose']
 else:
