@@ -37,12 +37,6 @@ class ConsistentHashingRouter(RoundRobinRouter):
         self._db_num_id_map = {}
         super(ConsistentHashingRouter, self).__init__(*args, **kwargs)
 
-    def flush_down_connections(self):
-        for db_num in self._down_connections:
-            self._hash.add_node(self._db_num_id_map[db_num])
-
-        super(ConsistentHashingRouter, self).flush_down_connections()
-
     def mark_connection_down(self, db_num):
         db_num = self.ensure_db_num(db_num)
         self._hash.remove_node(self._db_num_id_map[db_num])
@@ -63,15 +57,20 @@ class ConsistentHashingRouter(RoundRobinRouter):
         return True
 
     @routing_params
+    def _pre_routing(self, *args, **kwargs):
+        self.check_down_connections()
+
+        return super(ConsistentHashingRouter, self)._pre_routing(*args, **kwargs)
+
+    @routing_params
     def _route(self, attr, args, kwargs, **fkwargs):
         """
         The first argument is assumed to be the ``key`` for routing.
         """
+
         key = get_key(args, kwargs)
 
         found = self._hash.get_node(key)
-
-        print key, found
 
         if not found and len(self._down_connections) > 0:
             raise self.HostListExhausted()

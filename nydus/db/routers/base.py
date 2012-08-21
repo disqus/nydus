@@ -164,9 +164,24 @@ class RoundRobinRouter(BaseRouter):
         except ValueError:
             raise cls.InvalidDBNum()
 
+    def check_down_connections(self):
+        """
+        Iterates through all connections which were previously listed as unavailable
+        and marks any that have expired their retry_timeout as being up.
+        """
+        now = time.time()
+
+        for db_num, marked_down_at in self._down_connections.items():
+            if marked_down_at + self.retry_timeout <= now:
+                self.mark_connection_up(db_num)
+
     def flush_down_connections(self):
+        """
+        Marks all connections which were previously listed as unavailable as being up.
+        """
         self._get_db_attempts = 0
-        self._down_connections = {}
+        for db_num in self._down_connections.keys():
+            self.mark_connection_up(db_num)
 
     def mark_connection_down(self, db_num):
         db_num = self.ensure_db_num(db_num)
@@ -187,7 +202,7 @@ class RoundRobinRouter(BaseRouter):
         self._get_db_attempts += 1
 
         if self._get_db_attempts > self.attempt_reconnect_threshold:
-            self.flush_down_connections()
+            self.check_down_connections()
 
         if retry_for is not None:
             self.mark_connection_down(retry_for)

@@ -159,13 +159,13 @@ class BaseRoundRobinRouterTest(BaseRouterTest):
 
         self.assertEqual(self.router._get_db_attempts, 1)
 
-    @patch('nydus.db.routers.RoundRobinRouter.flush_down_connections')
-    def test__pre_routing_flush_down_connections(self, _flush_down_connections):
+    @patch('nydus.db.routers.RoundRobinRouter.check_down_connections')
+    def test__pre_routing_check_down_connections(self, _check_down_connections):
         self.router._get_db_attempts = RoundRobinRouter.attempt_reconnect_threshold + 1
 
         self.router._pre_routing(attr='test', args=('foo',))
 
-        self.assertTrue(_flush_down_connections.called)
+        self.assertTrue(_check_down_connections.called)
 
     @patch('nydus.db.routers.RoundRobinRouter.mark_connection_down')
     def test__pre_routing_retry_for(self, _mark_connection_down):
@@ -238,18 +238,6 @@ class ConsistentHashingRouterTest(BaseRoundRobinRouterTest):
         self.assertEquals([4], self.get_dbs(args=('foo',), retry_for=2))
 
         self.assertEquals([4], self.get_dbs(args=('foo',)))
-
-    def test_adds_back_down_host_once_attempt_reconnect_threshold_is_passed(self):
-        ConsistentHashingRouter.attempt_reconnect_threshold = 3
-
-        self.assertEquals([2], self.get_dbs(args=('foo',)))
-        self.assertEquals([4], self.get_dbs(args=('foo',), retry_for=2))
-        self.assertEquals([4], self.get_dbs(args=('foo',)))
-
-        # Router should add host 1 back to the pool now
-        self.assertEquals([2], self.get_dbs(args=('foo',)))
-
-        ConsistentHashingRouter.attempt_reconnect_threshold = 100000
 
     def test_raises_host_list_exhaused_if_no_host_can_be_found(self):
         # Kill the first 4
