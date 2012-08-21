@@ -27,7 +27,7 @@ class Ketama(object):
         self._hashring = dict()
         self._sorted_keys = []
 
-        self._nodes = nodes
+        self._nodes = set(nodes or [])
         self._weights = weights if weights else {}
 
         self._build_circle()
@@ -110,7 +110,7 @@ class Ketama(object):
         """
             Adds node to circle and rebuild it.
         """
-        self._nodes.append(node)
+        self._nodes.add(node)
         self._weights[node] = weight
         self._hashring = dict()
         self._sorted_keys = []

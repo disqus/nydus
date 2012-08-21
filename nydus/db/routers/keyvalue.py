@@ -71,6 +71,8 @@ class ConsistentHashingRouter(RoundRobinRouter):
 
         found = self._hash.get_node(key)
 
+        print key, found
+
         if not found and len(self._down_connections) > 0:
             raise self.HostListExhausted()
 
