@@ -145,10 +145,18 @@ class RoundRobinRouter(BaseRouter):
     retryable = True
 
     # How many requests to serve in a situation when a host is down before
-    # the down hosts are retried
+    # the down hosts are assesed for readmittance back into the pool of serving
+    # requests.
+    #
+    # If the attempt_reconnect_threshold is hit, it does not guarantee that the
+    # down hosts will be put back - only that the router will CHECK to see if
+    # the hosts CAN be put back.  The elegibility of a host being put back is
+    # handlede in the check_down_connections method, which by default will
+    # readmit a host if it was marked down more than retry_timeout seconds ago.
     attempt_reconnect_threshold = 100000
 
-    # Retry a down connection after this timeout
+    # Number of seconds a host must be marked down before it is elligable to be
+    # put back in the pool and retried.
     retry_timeout = 30
 
     def __init__(self, *args, **kwargs):
