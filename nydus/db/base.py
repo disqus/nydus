@@ -251,8 +251,6 @@ class EventualCommand(object):
     __enter__ = lambda x: x.__enter__()
     __exit__ = lambda x, *a, **kw: x.__exit__(*a, **kw)
 
-    ## public api commands cannot define an arg spec as they must proxy through after
-    ## the command has been resolved
     @promise_method
     def resolve(self, *args, **kwargs):
         value = getattr(args[0], self.__attr)(*self.__args, **self.__kwargs)
@@ -261,8 +259,6 @@ class EventualCommand(object):
     @promise_method
     def resolve_as(self, *args, **kwargs):
         self.__wrapped = args[0]
-        # HACK: swap out base class so types are correct
-        # self.__class__ = type(value)
         self.__resolved = True
         return args[0]
 
