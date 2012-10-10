@@ -8,6 +8,8 @@ nydus.db.base
 
 __all__ = ('LazyConnectionHandler', 'BaseCluster')
 
+from functools import wraps
+from itertools import izip
 from collections import defaultdict
 from nydus.db.routers import BaseRouter, routing_params
 from nydus.utils import ThreadPool
@@ -114,132 +116,183 @@ class CallProxy(object):
         return CallProxy(self._cluster, self._path + '.' + name)
 
 
-class EventualCommand(object):
-    _attr = None
-    _wrapped = None
-    _evaled = False
+def promise_method(func):
+    name = func.__name__
 
+    @wraps(func)
+    def wrapped(self, *args, **kwargs):
+        if getattr(self, '_%s__resolved' % (type(self).__name__,)):
+            return getattr(self.__wrapped, name)(*args, **kwargs)
+        return func(self, *args, **kwargs)
+    return wrapped
+
+
+def adjust_promise(command, value):
+    """
+    Public API to adjust an already resolved EventualCommand result value.
+    """
+    setattr(command, '_%s__wrapped' % (type(command).__name__,), value)
+
+
+class EventualCommand(object):
     # introspection support:
     __members__ = property(lambda self: self.__dir__())
 
-    def __init__(self, attr):
-        self._attr = attr
-        self._wrapped = None
-        self._evaled = False
-        self._args = []
-        self._kwargs = {}
-        self._ident = None
+    def __init__(self, attr, args=None, kwargs=None):
+        self.__attr = attr
+        self.__wrapped = None
+        self.__resolved = False
+        self.__args = args or []
+        self.__kwargs = kwargs or {}
+        self.__ident = ':'.join(map(str, [id(self.__attr), id(self.__args), id(self.__kwargs)]))
 
     def __call__(self, *args, **kwargs):
-        self._args = args
-        self._kwargs = kwargs
-        self._ident = ':'.join(map(str, [id(self._attr), id(self._args), id(self._kwargs)]))
+        self.__args = args
+        self.__kwargs = kwargs
+        self.__ident = ':'.join(map(str, [id(self.__attr), id(self.__args), id(self.__kwargs)]))
         return self
 
+    def __hash__(self):
+        # We return our ident
+        return hash(self.__ident)
+
     def __repr__(self):
-        if self._evaled:
-            return repr(self._wrapped)
-        return u'<EventualCommand: %s args=%s kwargs=%s>' % (self._attr, self._args, self._kwargs)
+        if self.__resolved:
+            return repr(self.__wrapped)
+        return u'<EventualCommand: %s args=%s kwargs=%s>' % (self.__attr, self.__args, self.__kwargs)
 
     def __getattr__(self, name):
-        if name in ('_attr', '_wrapped', '_evaled', '_args', '_kwargs', '_ident'):
-            return getattr(self, name)
-        return getattr(self._wrapped, name)
+        return getattr(self.__wrapped, name)
 
     def __setattr__(self, name, value):
-        if name in ('_attr', '_wrapped', '_evaled', '_args', '_kwargs', '_ident'):
+        if name.startswith('_EventualCommand') or name == '__class__':
             return object.__setattr__(self, name, value)
-        return setattr(self._wrapped, name, value)
+        return setattr(self.__wrapped, name, value)
 
     def __delattr__(self, name):
-        if name in ('_attr', '_wrapped', '_evaled', '_args', '_kwargs', '_ident'):
+        if name.startswith('_EventualCommand'):
             raise TypeError("can't delete %s." % name)
-        delattr(self._wrapped, name)
+        delattr(self.__wrapped, name)
 
     def __deepcopy__(self, memo):
         # Changed to use deepcopy from copycompat, instead of copy
         # For Python 2.4.
         from django.utils.copycompat import deepcopy
-        return deepcopy(self._wrapped, memo)
+        return deepcopy(self.__wrapped, memo)
 
     # Need to pretend to be the wrapped class, for the sake of objects that care
     # about this (especially in equality tests)
     def __get_class(self):
-        return self._wrapped.__class__
+        return self.__wrapped.__class__
     __class__ = property(__get_class)
-
-    def _set_value(self, value):
-        self._wrapped = value
-        self._evaled = True
-
-    def _execute(self, conn):
-        return getattr(conn, self._attr)(*self._args, **self._kwargs)
 
     def __dict__(self):
         try:
-            return self._current_object.__dict__
+            return vars(self.__wrapped)
         except RuntimeError:
             return AttributeError('__dict__')
     __dict__ = property(__dict__)
 
     def __setitem__(self, key, value):
-        self._wrapped[key] = value
+        self.__wrapped[key] = value
 
     def __delitem__(self, key):
-        del self._wrapped[key]
+        del self.__wrapped[key]
 
     def __setslice__(self, i, j, seq):
-        self._wrapped[i:j] = seq
+        self.__wrapped[i:j] = seq
 
     def __delslice__(self, i, j):
-        del self._wrapped[i:j]
+        del self.__wrapped[i:j]
 
-    __lt__ = lambda x, o: x._wrapped < o
-    __le__ = lambda x, o: x._wrapped <= o
-    __eq__ = lambda x, o: x._wrapped == o
-    __ne__ = lambda x, o: x._wrapped != o
-    __gt__ = lambda x, o: x._wrapped > o
-    __ge__ = lambda x, o: x._wrapped >= o
-    __cmp__ = lambda x, o: cmp(x._wrapped, o)
-    __hash__ = lambda x: hash(x._wrapped)
+    __lt__ = lambda x, o: x.__wrapped < o
+    __le__ = lambda x, o: x.__wrapped <= o
+    __eq__ = lambda x, o: x.__wrapped == o
+    __ne__ = lambda x, o: x.__wrapped != o
+    __gt__ = lambda x, o: x.__wrapped > o
+    __ge__ = lambda x, o: x.__wrapped >= o
+    __cmp__ = lambda x, o: cmp(x.__wrapped, o)
     # attributes are currently not callable
-    # __call__ = lambda x, *a, **kw: x._wrapped(*a, **kw)
-    __nonzero__ = lambda x: bool(x._wrapped)
-    __len__ = lambda x: len(x._wrapped)
-    __getitem__ = lambda x, i: x._wrapped[i]
-    __iter__ = lambda x: iter(x._wrapped)
-    __contains__ = lambda x, i: i in x._wrapped
-    __getslice__ = lambda x, i, j: x._wrapped[i:j]
-    __add__ = lambda x, o: x._wrapped + o
-    __sub__ = lambda x, o: x._wrapped - o
-    __mul__ = lambda x, o: x._wrapped * o
-    __floordiv__ = lambda x, o: x._wrapped // o
-    __mod__ = lambda x, o: x._wrapped % o
-    __divmod__ = lambda x, o: x._wrapped.__divmod__(o)
-    __pow__ = lambda x, o: x._wrapped ** o
-    __lshift__ = lambda x, o: x._wrapped << o
-    __rshift__ = lambda x, o: x._wrapped >> o
-    __and__ = lambda x, o: x._wrapped & o
-    __xor__ = lambda x, o: x._wrapped ^ o
-    __or__ = lambda x, o: x._wrapped | o
-    __div__ = lambda x, o: x._wrapped.__div__(o)
-    __truediv__ = lambda x, o: x._wrapped.__truediv__(o)
-    __neg__ = lambda x: -(x._wrapped)
-    __pos__ = lambda x: +(x._wrapped)
-    __abs__ = lambda x: abs(x._wrapped)
-    __invert__ = lambda x: ~(x._wrapped)
-    __complex__ = lambda x: complex(x._wrapped)
-    __int__ = lambda x: int(x._wrapped)
-    __long__ = lambda x: long(x._wrapped)
-    __float__ = lambda x: float(x._wrapped)
-    __str__ = lambda x: str(x._wrapped)
-    __unicode__ = lambda x: unicode(x._wrapped)
-    __oct__ = lambda x: oct(x._wrapped)
-    __hex__ = lambda x: hex(x._wrapped)
-    __index__ = lambda x: x._wrapped.__index__()
+    # __call__ = lambda x, *a, **kw: x.__wrapped(*a, **kw)
+    __nonzero__ = lambda x: bool(x.__wrapped)
+    __len__ = lambda x: len(x.__wrapped)
+    __getitem__ = lambda x, i: x.__wrapped[i]
+    __iter__ = lambda x: iter(x.__wrapped)
+    __contains__ = lambda x, i: i in x.__wrapped
+    __getslice__ = lambda x, i, j: x.__wrapped[i:j]
+    __add__ = lambda x, o: x.__wrapped + o
+    __sub__ = lambda x, o: x.__wrapped - o
+    __mul__ = lambda x, o: x.__wrapped * o
+    __floordiv__ = lambda x, o: x.__wrapped // o
+    __mod__ = lambda x, o: x.__wrapped % o
+    __divmod__ = lambda x, o: x.__wrapped.__divmod__(o)
+    __pow__ = lambda x, o: x.__wrapped ** o
+    __lshift__ = lambda x, o: x.__wrapped << o
+    __rshift__ = lambda x, o: x.__wrapped >> o
+    __and__ = lambda x, o: x.__wrapped & o
+    __xor__ = lambda x, o: x.__wrapped ^ o
+    __or__ = lambda x, o: x.__wrapped | o
+    __div__ = lambda x, o: x.__wrapped.__div__(o)
+    __truediv__ = lambda x, o: x.__wrapped.__truediv__(o)
+    __neg__ = lambda x: -(x.__wrapped)
+    __pos__ = lambda x: +(x.__wrapped)
+    __abs__ = lambda x: abs(x.__wrapped)
+    __invert__ = lambda x: ~(x.__wrapped)
+    __complex__ = lambda x: complex(x.__wrapped)
+    __int__ = lambda x: int(x.__wrapped)
+    __long__ = lambda x: long(x.__wrapped)
+    __float__ = lambda x: float(x.__wrapped)
+    __str__ = lambda x: str(x.__wrapped)
+    __unicode__ = lambda x: unicode(x.__wrapped)
+    __oct__ = lambda x: oct(x.__wrapped)
+    __hex__ = lambda x: hex(x.__wrapped)
+    __index__ = lambda x: x.__wrapped.__index__()
     __coerce__ = lambda x, o: x.__coerce__(x, o)
     __enter__ = lambda x: x.__enter__()
     __exit__ = lambda x, *a, **kw: x.__exit__(*a, **kw)
+
+    ## public api commands cannot define an arg spec as they must proxy through after
+    ## the command has been resolved
+    @promise_method
+    def resolve(self, *args, **kwargs):
+        value = getattr(args[0], self.__attr)(*self.__args, **self.__kwargs)
+        return self.resolve_as(value)
+
+    @promise_method
+    def resolve_as(self, *args, **kwargs):
+        self.__wrapped = args[0]
+        # HACK: swap out base class so types are correct
+        # self.__class__ = type(value)
+        self.__resolved = True
+        return args[0]
+
+    @promise_method
+    def get_command(self):
+        return (self.__attr, self.__args, self.__kwargs)
+
+    @promise_method
+    def get_name(self, *args, **kwargs):
+        return self.__attr
+
+    @promise_method
+    def get_args(self, *args, **kwargs):
+        return self.__args
+
+    @promise_method
+    def get_kwargs(self, *args, **kwargs):
+        return self.__kwargs
+
+    @promise_method
+    def set_args(self, *args, **kwargs):
+        self.__args = args[0]
+
+    @promise_method
+    def set_kwargs(self, *args, **kwargs):
+        self.__kwargs = args[0]
+
+    @promise_method
+    def clone(self, *args, **kwargs):
+        return EventualCommand(self.__attr, self.__args, self.__kwargs)
 
 
 class DistributedConnection(object):
@@ -270,21 +323,21 @@ class DistributedConnection(object):
         # used in pipelining
         if pipelined:
             pipe_command_map = defaultdict(list)
-
             pipes = dict()  # db -> pipeline
 
         # build up a list of pending commands and their routing information
         for command in self._commands:
-            cmd_ident = command._ident
+            cmd_ident = hash(command)
 
             command_map[cmd_ident] = command
 
             if self._cluster.router:
+                name, args, kwargs = command.get_command()
                 db_nums = self._cluster.router.get_dbs(
                     cluster=self._cluster,
-                    attr=command._attr,
-                    args=command._args,
-                    kwargs=command._kwargs,
+                    attr=name,
+                    args=args,
+                    kwargs=kwargs,
                 )
             else:
                 db_nums = self._cluster.keys()
@@ -294,7 +347,7 @@ class DistributedConnection(object):
 
             # Don't bother with the pooling if we only need to do one operation on a single machine
             if num_commands == 1:
-                self._commands = [command._execute(self._cluster[n]) for n in n]
+                self._commands = [command.resolve(self._cluster[n]) for n in n]
                 return
 
             # update the pipelined dbs
@@ -319,7 +372,7 @@ class DistributedConnection(object):
                     pipes[db_num].add(command)
                 else:
                     # execute in pool
-                    pool.add(command._ident, command._execute, [self._cluster[db_num]])
+                    pool.add(hash(command), command.clone().resolve, [self._cluster[db_num]])
 
         # We need to finalize our commands with a single execute in pipelines
         if pipelined:
@@ -334,15 +387,15 @@ class DistributedConnection(object):
             for db, result in result_map.iteritems():
                 if len(result) == 1:
                     result = result[0]
-                for i, value in enumerate(result):
-                    command_map[pipe_command_map[db][i]]._set_value(value)
+                for ident, value in izip(pipe_command_map[db], result):
+                    command_map[ident].resolve_as(value)
 
         else:
             for command in self._commands:
-                result = result_map[command._ident]
+                result = result_map[hash(command)]
                 if len(result) == 1:
                     result = result[0]
-                command._set_value(result)
+                adjust_promise(command, result)
 
         self._complete = True
 

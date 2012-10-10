@@ -53,12 +53,16 @@ class MemcachePipeline(BasePipeline):
         # consecutive 'get' commands into one 'get_multi' command.
 
         # Need to merge this into one command
-        if command._attr == 'get':
-            if self.pending and self.pending[-1]._attr == 'get_multi':
-                self.pending[-1]._args[0].append(command._args[0])
+        name, args, kwargs = command.get_command()
+        if name == 'get':
+            if self.pending and self.pending[-1].get_name() == 'get_multi':
+                prev_command = self.pending[-1]
+                args = prev_command.get_args()
+                args[0].append(command.get_args()[0])
+                prev_command.set_args(args)
 
             else:
-                key = command._args[0]
+                key = command.get_args()[0]
                 multi_command = EventualCommand('get_multi')
                 multi_command([key])
                 self.pending.append(multi_command)
@@ -69,6 +73,6 @@ class MemcachePipeline(BasePipeline):
     def execute(self):
         ret = []
         for command in self.pending:
-            ret.append(command._execute(self.connection))
+            ret.append(command.resolve(self.connection))
 
         return ret
