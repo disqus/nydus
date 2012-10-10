@@ -4,7 +4,7 @@ import sys
 from setuptools import setup, find_packages
 
 try:
-    import multiprocessing  # NOQA
+    __import__('multiprocessing')
 except:
     pass
 
@@ -18,6 +18,7 @@ tests_require = [
     'mock',
     'nose',
     'psycopg2',
+    'pylibmc',
     'redis',
     'riak',
     'thoonk==1.0.1.0',

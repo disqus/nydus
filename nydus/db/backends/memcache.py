@@ -1,0 +1,74 @@
+"""
+nydus.db.backends.memcache
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:copyright: (c) 2012 DISQUS.
+:license: Apache License 2.0, see LICENSE for more details.
+"""
+
+from __future__ import absolute_import
+
+import pylibmc
+
+from nydus.db.backends import BaseConnection, BasePipeline
+from nydus.db.base import EventualCommand
+
+
+class Memcache(BaseConnection):
+
+    retryable_exceptions = frozenset([pylibmc.Error])
+    supports_pipelines = True
+
+    def __init__(self, host='localhost', port=11211, binary=True,
+            behaviors=None, **options):
+        self.host = host
+        self.port = port
+        self.binary = binary
+        self.behaviors = behaviors
+        super(Memcache, self).__init__(**options)
+
+    @property
+    def identifier(self):
+        mapping = vars(self)
+        return "memcache://%(host)s:%(port)s/" % mapping
+
+    def connect(self):
+        host = "%s:%i" % (self.host, self.port)
+        return pylibmc.Client([host], binary=self.binary, behaviors=self.behaviors)
+
+    def disconnect(self):
+        self.connection.disconnect_all()
+
+    def get_pipeline(self, *args, **kwargs):
+        return MemcachePipeline(self)
+
+
+class MemcachePipeline(BasePipeline):
+    def __init__(self, connection):
+        self.pending = []
+        self.connection = connection
+
+    def add(self, command):
+        # A feature of Memcache is a 'get_multi' command. Therefore we can merge
+        # consecutive 'get' commands into one 'get_multi' command.
+
+        # Need to merge this into one command
+        if command._attr == 'get':
+            if self.pending and self.pending[-1]._attr == 'get_multi':
+                self.pending[-1]._args[0].append(command._args[0])
+
+            else:
+                key = command._args[0]
+                multi_command = EventualCommand('get_multi')
+                multi_command([key])
+                self.pending.append(multi_command)
+
+        else:
+            self.pending.append(command)
+
+    def execute(self):
+        ret = []
+        for command in self.pending:
+            ret.append(command._execute(self.connection))
+
+        return ret
