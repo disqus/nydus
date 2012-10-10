@@ -22,7 +22,9 @@ class RedisPipeline(BasePipeline):
 
     def add(self, command):
         self.pending.append(command)
-        getattr(self.pipe, command._attr)(*command._args, **command._kwargs)
+        name, args, kwargs = command.get_command()
+        # ensure the command is executed in the pipeline
+        getattr(self.pipe, name)(*args, **kwargs)
 
     def execute(self):
         return self.pipe.execute()

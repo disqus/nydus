@@ -46,7 +46,7 @@ class RedisTest(BaseTest):
         with redis.map() as conn:
             [conn.set(c, i) for i, c in enumerate(chars)]
             res = [conn.get(c) for c in chars]
-        self.assertEqual(range(len(chars)), [int(r._wrapped) for r in res])
+        self.assertEqual(range(len(chars)), [int(r) for r in res])
 
     @mock.patch('nydus.db.backends.redis.RedisClient')
     def test_client_instantiates_with_kwargs(self, RedisClient):
