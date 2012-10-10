@@ -10,6 +10,7 @@ from nydus.db.backends.memcache import Memcache
 import mock
 import pylibmc
 
+
 class MemcacheTest(BaseTest):
 
     def setUp(self):
@@ -76,7 +77,6 @@ class MemcacheTest(BaseTest):
                 conn.get(key)
 
         self.assertEqual(len(conn.get_results()), len(keys))
-        print conn.get_results()
         self.assertEqual(Client().get.call_count, 0)
         # Note: This is two because it should execute the command once for each
         # of the two servers.
