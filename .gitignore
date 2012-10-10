@@ -2,7 +2,6 @@
 *.egg-info
 *.gz
 *.egg
-.arcconfig
 .coverage
 /dist
 /build
