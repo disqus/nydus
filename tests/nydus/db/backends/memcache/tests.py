@@ -30,9 +30,12 @@ class MemcacheTest(BaseTest):
         self.assertEquals(Client.call_count, 1)
         Client.assert_any_call(['localhost:11211'], binary=True, behaviors=None)
 
-    def test_with_cluster(self):
+    @mock.patch('pylibmc.Client.get')
+    def test_with_cluster(self, get):
         p = BaseCluster(hosts={0: self.memcache})
-        self.assertEquals(p.get('MemcacheTest_with_cluster'), None)
+        result = p.get('MemcacheTest_with_cluster')
+        get.assert_called_once_with('MemcacheTest_with_cluster')
+        self.assertEquals(result, get.return_value)
 
     @mock.patch('pylibmc.Client')
     def test_map_does_pipeline(self, Client):
