@@ -45,12 +45,12 @@ class EventualCommand(object):
         self.__resolved = False
         self.__args = args or []
         self.__kwargs = kwargs or {}
-        self.__ident = ':'.join(map(str, [id(self.__attr), id(self.__args), id(self.__kwargs)]))
+        self.__ident = ':'.join(map(lambda x: str(hash(str(x))), [self.__attr, self.__args, self.__kwargs]))
 
     def __call__(self, *args, **kwargs):
         self.__args = args
         self.__kwargs = kwargs
-        self.__ident = ':'.join(map(str, [id(self.__attr), id(self.__args), id(self.__kwargs)]))
+        self.__ident = ':'.join(map(lambda x: str(hash(str(x))), [self.__attr, self.__args, self.__kwargs]))
         return self
 
     def __hash__(self):

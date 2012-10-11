@@ -57,25 +57,25 @@ class BaseDistributedConnection(object):
         pending_commands = self._build_pending_commands()
 
         num_commands = sum(len(v) for v in pending_commands.itervalues())
-        if num_commands == 0:
-            self._commands = []
-
         # Don't bother with the pooling if we only need to do one operation on a single machine
-        elif num_commands == 1:
+        if num_commands == 1:
             db_num, (command,) = pending_commands.items()
             self._commands = [command.resolve(self._cluster[db_num])]
 
-        else:
+        elif num_commands > 1:
             results = self.execute(self._cluster, pending_commands)
 
-            for command, result in results.iteritems():
-                for value in result:
-                    if isinstance(value, Exception):
-                        self._errors.append((command.get_name(), value))
+            for command in self._commands:
+                result = results.get(command)
 
-                # XXX: single path routing (implicit) doesnt return a list
-                if len(result) == 1:
-                    result = result[0]
+                if result:
+                    for value in result:
+                        if isinstance(value, Exception):
+                            self._errors.append((command.get_name(), value))
+
+                    # XXX: single path routing (implicit) doesnt return a list
+                    if len(result) == 1:
+                        result = result[0]
 
                 change_resolution(command, result)
 
@@ -153,22 +153,24 @@ class PipelinedDistributedConnection(BaseDistributedConnection):
             pool.add(db_num, pipe.execute, (), {})
 
         # Consolidate commands with their appropriate results
-        result_map = pool.join()
+        db_result_map = pool.join()
 
-        results = defaultdict(list)
         # Results get grouped by their command signature, so we have to separate the logic
-        for db_num, result in result_map.iteritems():
+        results = defaultdict(list)
+
+        for db_num, db_results in db_result_map.iteritems():
             # Pipelines always execute on a single database
-            assert len(result) == 1
+            assert len(db_results) == 1
+            db_results = db_results[0]
 
-            result = result[0]
-
-            if isinstance(result, Exception):
+            # if pipe.execute (within nydus) fails, this will be an exception object
+            if isinstance(db_results, Exception):
                 for command in commands[db_num]:
-                    results[command].append(result)
-            else:
-                for command, value in izip(commands[db_num], result):
-                    results[command].append(value)
+                    results[command].append(db_results)
+                continue
+
+            for command, result in db_results.iteritems():
+                results[command].append(result)
 
         return results
 
