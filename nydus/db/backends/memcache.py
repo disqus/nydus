@@ -11,7 +11,7 @@ from __future__ import absolute_import
 import pylibmc
 
 from nydus.db.backends import BaseConnection, BasePipeline
-from nydus.db.base import EventualCommand
+from nydus.db.promise import EventualCommand
 
 
 class Memcache(BaseConnection):
