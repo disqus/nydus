@@ -226,25 +226,25 @@ class EventualCommandTest(BaseTest):
     def test_evaled_repr(self):
         ec = EventualCommand('foo')
         ec('bar', baz='foo')
-        ec._set_value('biz')
+        ec.resolve_as('biz')
 
         self.assertEquals(repr(ec), u"'biz'")
 
     def test_coersion(self):
         ec = EventualCommand('foo')()
-        ec._set_value('5')
+        ec.resolve_as('5')
 
         self.assertEquals(int(ec), 5)
 
     def test_nonzero(self):
         ec = EventualCommand('foo')()
-        ec._set_value(None)
+        ec.resolve_as(None)
 
         self.assertEquals(int(ec or 0), 0)
 
     def test_evaled_unicode(self):
         ec = EventualCommand('foo')
-        ec._set_value('biz')
+        ec.resolve_as('biz')
 
         self.assertEquals(unicode(ec), u'biz')
 

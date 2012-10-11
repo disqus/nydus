@@ -26,7 +26,8 @@ class BasePipeline(object):
     def execute(self):
         results = {}
         for command in self.pending:
-            results[command._ident] = command(*command._args, **command._kwargs)
+            args, kwargs = command.get_command()[1:]
+            results[command] = command(*args, **kwargs)
         return results
 
 
