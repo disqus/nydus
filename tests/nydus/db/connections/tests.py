@@ -10,13 +10,13 @@ from __future__ import absolute_import
 import mock
 
 from nydus.db import create_cluster
-from nydus.db.base import BaseCluster, EventualCommand
+from nydus.db.base import BaseCluster, EventualCommand, CommandError
 from nydus.db.routers.base import BaseRouter
 from nydus.db.routers.keyvalue import get_key
 from nydus.db.backends.base import BaseConnection
 from nydus.utils import apply_defaults
 
-from tests import BaseTest
+from tests import BaseTest, fixture
 
 
 class DummyConnection(BaseConnection):
@@ -26,6 +26,11 @@ class DummyConnection(BaseConnection):
 
     def foo(self, *args, **kwargs):
         return self.resp
+
+
+class DummyErroringConnection(DummyConnection):
+    def foo(self, *args, **kwargs):
+        raise ValueError(self.resp)
 
 
 class DummyRouter(BaseRouter):
@@ -121,17 +126,20 @@ class ClusterTest(BaseTest):
         self.assertEquals(p.get_conn(), [c, c2])
         self.assertEquals(p.get_conn('foo'), [c, c2])
 
-    def test_map(self):
+
+class MapTest(BaseTest):
+    @fixture
+    def cluster(self):
         c = DummyConnection(num=0, resp='foo')
         c2 = DummyConnection(num=1, resp='bar')
-
-        # test dummy router
-        r = DummyRouter
-        p = BaseCluster(
+        return BaseCluster(
             hosts={0: c, 1: c2},
-            router=r,
         )
-        with p.map() as conn:
+
+    def test_handles_single_routing_results(self):
+        self.cluster.install_router(DummyRouter)
+
+        with self.cluster.map() as conn:
             foo = conn.foo()
             bar = conn.foo('foo')
             self.assertEquals(foo, None)
@@ -140,11 +148,8 @@ class ClusterTest(BaseTest):
         self.assertEquals(bar, 'bar')
         self.assertEquals(foo, 'foo')
 
-        # test default routing behavior
-        p = BaseCluster(
-            hosts={0: c, 1: c2},
-        )
-        with p.map() as conn:
+    def test_handles_groups_of_results(self):
+        with self.cluster.map() as conn:
             foo = conn.foo()
             bar = conn.foo('foo')
             self.assertEquals(foo, None)
@@ -152,6 +157,39 @@ class ClusterTest(BaseTest):
 
         self.assertEquals(foo, ['foo', 'bar'])
         self.assertEquals(bar, ['foo', 'bar'])
+
+
+class MapWithFailuresTest(BaseTest):
+    @fixture
+    def cluster(self):
+        return BaseCluster(
+            hosts={
+                0: DummyConnection(num=0, resp='foo'),
+                1: DummyErroringConnection(num=1, resp='bar'),
+            },
+            router=DummyRouter,
+        )
+
+    def test_propagates_errors(self):
+        with self.assertRaises(CommandError):
+            with self.cluster.map() as conn:
+                foo = conn.foo()
+                bar = conn.foo('foo')
+                self.assertEquals(foo, None)
+                self.assertEquals(bar, None)
+
+    def test_fail_silenlty(self):
+        with self.cluster.map(fail_silently=True) as conn:
+            foo = conn.foo()
+            bar = conn.foo('foo')
+            self.assertEquals(foo, None)
+            self.assertEquals(bar, None)
+
+        self.assertEquals(len(conn.get_errors()), 1)
+        self.assertEquals(type(conn.get_errors()[0][1]), ValueError)
+
+        self.assertEquals(foo, 'foo')
+        self.assertNotEquals(foo, 'bar')
 
 
 class FlakeyConnection(DummyConnection):
@@ -247,6 +285,16 @@ class EventualCommandTest(BaseTest):
         ec.resolve_as('biz')
 
         self.assertEquals(unicode(ec), u'biz')
+
+    def test_command_error_returns_as_error(self):
+        ec = EventualCommand('foo')
+        ec.resolve_as(CommandError([ValueError('test')]))
+        self.assertEquals(ec.is_error, True)
+
+    def test_other_error_does_not_return_as_error(self):
+        ec = EventualCommand('foo')
+        ec.resolve_as(ValueError('test'))
+        self.assertEquals(ec.is_error, False)
 
 
 class ApplyDefaultsTest(BaseTest):

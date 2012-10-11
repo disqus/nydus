@@ -15,6 +15,17 @@ from nydus.db.routers import BaseRouter, routing_params
 from nydus.utils import ThreadPool
 
 
+class CommandError(Exception):
+    def __init__(self, errors):
+        self.errors = errors
+
+    def __repr__(self):
+        return '<%s (%d): %r>' % (type(self), len(self.errors), self.errors)
+
+    def __str__(self):
+        return '%d command(s) failed: %r' % (len(self.errors), self.errors)
+
+
 class BaseCluster(object):
     """
     Holds a cluster of connections.
@@ -24,8 +35,8 @@ class BaseCluster(object):
 
     def __init__(self, hosts, router=BaseRouter, max_connection_retries=20):
         self.hosts = hosts
-        self.router = router(self)
         self.max_connection_retries = max_connection_retries
+        self.install_router(router)
 
     def __len__(self):
         return len(self.hosts)
@@ -33,18 +44,18 @@ class BaseCluster(object):
     def __getitem__(self, name):
         return self.hosts[name]
 
-    def __getattr__(self, attr):
-        if attr in self.__dict__:
-            return self.__dict__[attr]
-        else:
-            return CallProxy(self, attr)
+    def __getattr__(self, name):
+        return CallProxy(self, name)
 
     def __iter__(self):
         for name in self.hosts.iterkeys():
             yield name
 
-    def _execute(self, path, args, kwargs):
-        connections = self._connections_for(path, args=args, kwargs=kwargs)
+    def install_router(self, router):
+        self.router = router(self)
+
+    def execute(self, path, args, kwargs):
+        connections = self.__connections_for(path, args=args, kwargs=kwargs)
 
         results = []
         for conn in connections:
@@ -61,7 +72,7 @@ class BaseCluster(object):
                     elif retry == self.max_connection_retries - 1:
                         raise self.MaxRetriesExceededError(e)
                     else:
-                        conn = self._connections_for(path, retry_for=conn.num, args=args, kwargs=kwargs)[0]
+                        conn = self.__connections_for(path, retry_for=conn.num, args=args, kwargs=kwargs)[0]
                 else:
                     break
 
@@ -84,18 +95,18 @@ class BaseCluster(object):
         during all steps of the process. An example of this would be
         Redis pipelines.
         """
-        connections = self._connections_for('get_conn', args=args, kwargs=kwargs)
+        connections = self.__connections_for('get_conn', args=args, kwargs=kwargs)
 
         if len(connections) is 1:
             return connections[0]
         else:
             return connections
 
-    def map(self, workers=None):
-        return DistributedContextManager(self, workers)
+    def map(self, workers=None, **kwargs):
+        return DistributedContextManager(self, workers, **kwargs)
 
     @routing_params
-    def _connections_for(self, attr, args, kwargs, **fkwargs):
+    def __connections_for(self, attr, args, kwargs, **fkwargs):
         return [self[n] for n in self.router.get_dbs(attr=attr, args=args, kwargs=kwargs, **fkwargs)]
 
 
@@ -104,16 +115,14 @@ class CallProxy(object):
     Handles routing function calls to the proper connection.
     """
     def __init__(self, cluster, path):
-        self._cluster = cluster
-        self._path = path
+        self.__cluster = cluster
+        self.__path = path
 
     def __call__(self, *args, **kwargs):
-        return self._cluster._execute(self._path, args, kwargs)
+        return self.__cluster.execute(self.__path, args, kwargs)
 
     def __getattr__(self, name):
-        if name in self.__dict__:
-            return self.__dict__[name]
-        return CallProxy(self._cluster, self._path + '.' + name)
+        return CallProxy(self.__cluster, self.__path + '.' + name)
 
 
 def promise_method(func):
@@ -136,7 +145,8 @@ def change_resolution(command, value):
     """
     Public API to change the resolution of an already resolved EventualCommand result value.
     """
-    setattr(command, '_%s__wrapped' % (type(command).__name__,), value)
+    command._EventualCommand__wrapped = value
+    command._EventualCommand__resolved = True
 
 
 class EventualCommand(object):
@@ -256,6 +266,10 @@ class EventualCommand(object):
     __enter__ = lambda x: x.__enter__()
     __exit__ = lambda x, *a, **kw: x.__exit__(*a, **kw)
 
+    @property
+    def is_error(self):
+        return isinstance(self.__wrapped, CommandError)
+
     @promise_method
     def resolve(self, conn):
         value = getattr(conn, self.__attr)(*self.__args, **self.__kwargs)
@@ -297,28 +311,29 @@ class EventualCommand(object):
 
 
 class DistributedConnection(object):
-    def __init__(self, cluster, workers=None):
-        self._cluster = cluster
-        self._workers = min(workers or len(cluster), 16)
-        self._commands = []
-        self._complete = False
+    def __init__(self, cluster, workers=None, fail_silently=False):
+        self.__cluster = cluster
+        self.__workers = min(workers or len(cluster), 16)
+        self.__commands = []
+        self.__complete = False
+        self.__errors = []
+        self.__fail_silently = fail_silently
+        self.__resolved = False
 
     def __getattr__(self, attr):
-        if attr in self.__dict__:
-            return self.__dict__[attr]
-        else:
-            command = EventualCommand(attr)
-            self._commands.append(command)
-            return command
+        command = EventualCommand(attr)
+        self.__commands.append(command)
+        return command
 
-    def _execute(self):
-        num_commands = len(self._commands)
+    @promise_method
+    def resolve(self):
+        num_commands = len(self.__commands)
         if num_commands == 0:
-            self._commands = []
+            self.__commands = []
             return
 
         command_map = {}
-        pipelined = all(self._cluster[n].supports_pipelines for n in self._cluster)
+        pipelined = all(self.__cluster[n].supports_pipelines for n in self.__cluster)
         pending_commands = defaultdict(list)
 
         # used in pipelining
@@ -327,28 +342,28 @@ class DistributedConnection(object):
             pipes = dict()  # db -> pipeline
 
         # build up a list of pending commands and their routing information
-        for command in self._commands:
+        for command in self.__commands:
             cmd_ident = hash(command)
 
             command_map[cmd_ident] = command
 
-            if self._cluster.router:
+            if self.__cluster.router:
                 name, args, kwargs = command.get_command()
-                db_nums = self._cluster.router.get_dbs(
-                    cluster=self._cluster,
+                db_nums = self.__cluster.router.get_dbs(
+                    cluster=self.__cluster,
                     attr=name,
                     args=args,
                     kwargs=kwargs,
                 )
             else:
-                db_nums = self._cluster.keys()
+                db_nums = self.__cluster.keys()
 
             # The number of commands is based on the total number of executable commands
             num_commands += len(db_nums)
 
             # Don't bother with the pooling if we only need to do one operation on a single machine
             if num_commands == 1:
-                self._commands = [command.resolve(self._cluster[n]) for n in n]
+                self._commands = [command.resolve(self.__cluster[n]) for n in n]
                 return
 
             # update the pipelined dbs
@@ -361,19 +376,19 @@ class DistributedConnection(object):
                 pending_commands[db_num].append(command)
 
         # Create the threadpool and pipe jobs into it
-        pool = ThreadPool(min(self._workers, len(pending_commands)))
+        pool = ThreadPool(min(self.__workers, len(pending_commands)))
 
         # execute our pending commands either in the pool, or using a pipeline
         for db_num, command_list in pending_commands.iteritems():
             if pipelined:
-                pipes[db_num] = self._cluster[db_num].get_pipeline()
+                pipes[db_num] = self.__cluster[db_num].get_pipeline()
             for command in command_list:
                 if pipelined:
                     # add to pipeline
                     pipes[db_num].add(command)
                 else:
                     # execute in pool
-                    pool.add(hash(command), command.clone().resolve, [self._cluster[db_num]])
+                    pool.add(hash(command), command.clone().resolve, [self.__cluster[db_num]])
 
         # We need to finalize our commands with a single execute in pipelines
         if pipelined:
@@ -389,37 +404,50 @@ class DistributedConnection(object):
                 if len(result) == 1:
                     result = result[0]
                 for ident, value in izip(pipe_command_map[db], result):
+                    if isinstance(value, Exception):
+                        self.__errors.append((command_map[ident], value))
                     command_map[ident].resolve_as(value)
 
         else:
-            for command in self._commands:
-                # we explicitly use the has as the identifier as that is how it was added to the
+            for command in self.__commands:
+                # we explicitly use the hash as the identifier as that is how it was added to the
                 # pool originally
                 result = result_map[hash(command)]
+                for value in result:
+                    if isinstance(value, Exception):
+                        self.__errors.append((command, value))
+
                 if len(result) == 1:
                     result = result[0]
+
                 change_resolution(command, result)
 
-        self._complete = True
+        if not self.__fail_silently and self.__errors:
+            raise CommandError(self.__errors)
+
+        self.__resolved = True
 
     def get_results(self):
-        assert self._complete, 'you must execute the commands before fetching results'
+        assert self.__resolved, 'you must execute the commands before fetching results'
 
-        return self._commands
+        return self.__commands
+
+    def get_errors(self):
+        assert self.__resolved, 'you must execute the commands before fetching results'
+
+        return self.__errors
 
 
 class DistributedContextManager(object):
-    def __init__(self, cluster, workers=None):
-        self._workers = workers
-        self._cluster = cluster
+    def __init__(self, cluster, workers=None, **kwargs):
+        self.connection = DistributedConnection(cluster, workers, **kwargs)
 
     def __enter__(self):
-        self._handler = DistributedConnection(self._cluster, self._workers)
-        return self._handler
+        return self.connection
 
     def __exit__(self, exc_type, exc_value, tb):
         # we need to break up each command and route it
-        self._handler._execute()
+        self.connection.resolve()
 
 
 class LazyConnectionHandler(dict):
@@ -429,7 +457,7 @@ class LazyConnectionHandler(dict):
     def __init__(self, conf_callback):
         self.conf_callback = conf_callback
         self.conf_settings = {}
-        self._is_ready = False
+        self.__is_ready = False
 
     def __getitem__(self, key):
         if not self.is_ready():
@@ -437,10 +465,7 @@ class LazyConnectionHandler(dict):
         return super(LazyConnectionHandler, self).__getitem__(key)
 
     def is_ready(self):
-        return self._is_ready
-        # if self.conf_settings != self.conf_callback():
-        #     return False
-        # return True
+        return self.__is_ready
 
     def reload(self):
         from nydus.db import create_cluster
