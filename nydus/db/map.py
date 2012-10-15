@@ -146,7 +146,7 @@ class PipelinedDistributedConnection(BaseDistributedConnection):
             pipes[db_num] = cluster[db_num].get_pipeline()
             for command in command_list:
                 # add to pipeline
-                pipes[db_num].add(command)
+                pipes[db_num].add(command.clone())
 
         # We need to finalize our commands with a single execute in pipelines
         for db_num, pipe in pipes.iteritems():
@@ -163,8 +163,12 @@ class PipelinedDistributedConnection(BaseDistributedConnection):
 
             result = result[0]
 
-            for command, value in izip(commands[db_num], result):
-                results[command].append(value)
+            if isinstance(result, Exception):
+                for command in commands[db_num]:
+                    results[command].append(result)
+            else:
+                for command, value in izip(commands[db_num], result):
+                    results[command].append(value)
 
         return results
 
