@@ -3,10 +3,12 @@ from __future__ import absolute_import
 import mock
 
 from nydus.db import create_cluster
-from nydus.db.base import BaseCluster, EventualCommand, CommandError
+from nydus.db.backends.base import BaseConnection
+from nydus.db.base import BaseCluster
+from nydus.db.exceptions import CommandError
 from nydus.db.routers.base import BaseRouter
 from nydus.db.routers.keyvalue import get_key
-from nydus.db.backends.base import BaseConnection
+from nydus.db.promise import EventualCommand
 from nydus.utils import apply_defaults
 
 from tests import BaseTest, fixture
@@ -178,7 +180,7 @@ class MapWithFailuresTest(BaseTest):
             self.assertEquals(foo, None)
             self.assertEquals(bar, None)
 
-        self.assertEquals(len(conn.get_errors()), 1)
+        self.assertEquals(len(conn.get_errors()), 1, conn.get_errors())
         self.assertEquals(type(conn.get_errors()[0][1]), ValueError)
 
         self.assertEquals(foo, 'foo')
