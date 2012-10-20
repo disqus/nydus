@@ -60,20 +60,63 @@ def peek(value):
     yield prev, None
 
 
+def grouped_args_for_command(command):
+    """
+    Returns a list of arguments that are shared for this command.
+
+    When comparing similar commands, these arguments represent the
+    groupable signature for said commands.
+    """
+    if command.get_name() == 'set':
+        return command.get_args()[2:]
+    return command.get_args()[1:]
+
+
 def grouped_command(commands):
+    """
+    Given a list of commands (which are assumed groupable), return
+    a new command which is a batch (multi) command.
+
+    For ``set`` commands the outcome will be::
+
+        set_multi({key: value}, **kwargs)
+
+    For ``get`` and ``delete`` commands, the outcome will be::
+
+        get_multi(list_of_keys, **kwargs)
+
+    (Or respectively ``delete_multi``)
+    """
     base = commands[0]
     name = base.get_name()
     multi_command = EventualCommand('%s_multi' % name)
     if name in ('get', 'delete'):
-        multi_command([c.get_args()[0] for c in commands], *base.get_args()[1:], **base.get_kwargs())
+        args = [c.get_args()[0] for c in commands]
     elif base.get_name() == 'set':
-        multi_command(dict(c.get_args()[0:2] for c in commands), *base.get_args()[2:], **base.get_kwargs())
+        args = dict(c.get_args()[0:2] for c in commands)
     else:
         raise ValueError('Command not supported: %r' % (base.get_name(),))
+
+    multi_command(args, *grouped_args_for_command(base), **base.get_kwargs())
+
     return multi_command
 
 
 def can_group_commands(command, next_command):
+    """
+    Returns a boolean representing whether these commands can be
+    grouped together or not.
+
+    A few things are taken into account for this decision:
+
+    For ``set`` commands:
+
+    - Are all arguments other than the key/value the same?
+
+    For ``delete`` and ``get`` commands:
+
+    - Are all arguments other than the key the same?
+    """
     multi_capable_commands = ('get', 'set', 'delete')
 
     if next_command is None:
@@ -88,12 +131,8 @@ def can_group_commands(command, next_command):
     if name != next_command.get_name():
         return False
 
-    if name == 'set':
-        if command.get_args()[2:] != next_command.get_args()[2:]:
-            return False
-    else:
-        if command.get_args()[1:] != next_command.get_args()[1:]:
-            return False
+    if grouped_args_for_command(command) != grouped_args_for_command(next_command):
+        return False
 
     if command.get_kwargs() != next_command.get_kwargs():
         return False
