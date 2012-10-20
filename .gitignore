@@ -2,7 +2,9 @@
 *.egg-info
 *.gz
 *.egg
+.tox
 .coverage
 /dist
 /build
 /cover
+/htmlcov
