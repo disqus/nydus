@@ -3,14 +3,9 @@ from __future__ import absolute_import
 import unittest2
 from nydus.db.backends.thoonk import Thoonk
 from nydus.db import create_cluster
-from uuid import uuid4
 
 
 class ThoonkTest(unittest2.TestCase):
-    """docstring for ThoonkPubsub"""
-    def get_rand_name(self, prefix=None, suffix=None):
-        return prefix if prefix else "" + uuid4.hex + suffix if suffix else ""
-
     def get_cluster(self, router):
         cluster = create_cluster({
             'backend': 'nydus.db.backends.thoonk.Thoonk',
@@ -28,10 +23,7 @@ class ThoonkTest(unittest2.TestCase):
 
     def flush_custer(self, cluster):
         for x in range(len(cluster)):
-            if isinstance(cluster.get_conn(), list):
-                c = cluster.get_conn()[x]
-            else:
-                c = cluster.get_conn()
+            c = cluster.get_conn()[x]
             c.redis.flushdb()
 
     def setUp(self):
