@@ -36,6 +36,51 @@ class DummyRouter(BaseRouter):
         return [0]
 
 
+class ConnectionTest(BaseTest):
+    @fixture
+    def connection(self):
+        return BaseConnection(0)
+
+    @mock.patch('nydus.db.backends.base.BaseConnection.disconnect')
+    def test_close_calls_disconnect(self, disconnect):
+        self.connection._connection = mock.Mock()
+        self.connection.close()
+        disconnect.assert_called_once_with()
+
+    @mock.patch('nydus.db.backends.base.BaseConnection.disconnect', mock.Mock(return_value=None))
+    def test_close_unsets_connection(self):
+        self.connection.close()
+        self.assertEquals(self.connection._connection, None)
+
+    @mock.patch('nydus.db.backends.base.BaseConnection.disconnect')
+    def test_close_propagates_noops_if_not_connected(self, disconnect):
+        self.connection.close()
+        self.assertFalse(disconnect.called)
+
+    @mock.patch('nydus.db.backends.base.BaseConnection.connect')
+    def test_connection_forces_connect(self, connect):
+        self.connection.connection
+        connect.assert_called_once_with()
+
+    @mock.patch('nydus.db.backends.base.BaseConnection.connect')
+    def test_connection_doesnt_reconnect_with_existing_connection(self, connect):
+        self.connection._connection = mock.Mock()
+        self.connection.connection
+        self.assertFalse(connect.called)
+
+    @mock.patch('nydus.db.backends.base.BaseConnection.connect')
+    def test_connection_returns_result_of_connect(self, connect):
+        val = self.connection.connection
+        self.assertEquals(val, connect.return_value)
+
+    def test_attrs_proxy(self):
+        conn = mock.Mock()
+        self.connection._connection = conn
+        val = self.connection.foo(biz='baz')
+        conn.foo.assert_called_once_with(biz='baz')
+        self.assertEquals(val, conn.foo.return_value)
+
+
 class CreateClusterTest(BaseTest):
     def test_creates_cluster(self):
         c = create_cluster({

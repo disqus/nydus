@@ -17,18 +17,20 @@ class BasePipeline(object):
     API for dealing with pipelined commands.
     """
     def __init__(self, connection):
-        self.pending = []
         self.connection = connection
 
     def add(self, command):
-        self.pending.append(command)
+        """
+        Add a command to the pending execution pipeline.
+        """
+        raise NotImplementedError
 
     def execute(self):
-        results = {}
-        for command in self.pending:
-            args, kwargs = command.get_command()[1:]
-            results[command] = command(*args, **kwargs)
-        return results
+        """
+        Execute all pending commands and return a list of the results
+        ordered by call.
+        """
+        raise NotImplementedError
 
 
 class BaseConnection(object):
@@ -46,6 +48,9 @@ class BaseConnection(object):
         self._connection = None
         self.num = num
 
+    def __getattr__(self, name):
+        return getattr(self.connection, name)
+
     @property
     def identifier(self):
         return repr(self)
@@ -57,21 +62,29 @@ class BaseConnection(object):
         return self._connection
 
     def close(self):
+        """
+        Close the connection if it is open.
+        """
         if self._connection:
             self.disconnect()
         self._connection = None
 
     def connect(self):
         """
-        connect() must return a connection object
+        Connect.
+
+        Must return a connection object.
         """
         raise NotImplementedError
 
     def disconnect(self):
+        """
+        Disconnect.
+        """
         raise NotImplementedError
 
     def get_pipeline(self):
-        return BasePipeline(self)
-
-    def __getattr__(self, name):
-        return getattr(self.connection, name)
+        """
+        Return a new pipeline instance (bound to this connection).
+        """
+        raise NotImplementedError
