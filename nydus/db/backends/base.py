@@ -18,12 +18,13 @@ class BasePipeline(object):
     """
     def __init__(self, connection):
         self.connection = connection
+        self.pending = []
 
     def add(self, command):
         """
         Add a command to the pending execution pipeline.
         """
-        raise NotImplementedError
+        self.pending.append(command)
 
     def execute(self):
         """
