@@ -131,9 +131,12 @@ def can_group_commands(command, next_command):
     if name != next_command.get_name():
         return False
 
+    # if the shared args (key, or key/value) do not match, we cannot group
     if grouped_args_for_command(command) != grouped_args_for_command(next_command):
         return False
 
+    # If the keyword arguments do not much (e.g. key_prefix, or timeout on set)
+    # then we cannot group
     if command.get_kwargs() != next_command.get_kwargs():
         return False
 
