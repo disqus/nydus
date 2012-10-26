@@ -114,6 +114,11 @@ class EventualCommand(object):
     def __delslice__(self, i, j):
         del self.__wrapped[i:j]
 
+    def __instancecheck__(self, cls):
+        if self._wrapped is None:
+            return False
+        return isinstance(self._wrapped, cls)
+
     __lt__ = lambda x, o: x.__wrapped < o
     __le__ = lambda x, o: x.__wrapped <= o
     __eq__ = lambda x, o: x.__wrapped == o

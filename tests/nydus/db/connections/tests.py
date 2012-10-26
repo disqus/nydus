@@ -336,6 +336,12 @@ class EventualCommandTest(BaseTest):
         ec.resolve_as(ValueError('test'))
         self.assertEquals(ec.is_error, False)
 
+    def test_isinstance_check(self):
+        ec = EventualCommand('foo')
+        ec.resolve_as(['foo', 'bar'])
+
+        self.assertEquals(isinstance(ec, list), True)
+
 
 class ApplyDefaultsTest(BaseTest):
     def test_does_apply(self):
