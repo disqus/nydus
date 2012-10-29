@@ -19,13 +19,13 @@ class Memcache(BaseConnection):
     retryable_exceptions = frozenset([pylibmc.Error])
     supports_pipelines = True
 
-    def __init__(self, host='localhost', port=11211, binary=True,
+    def __init__(self, num, host='localhost', port=11211, binary=True,
             behaviors=None, **options):
         self.host = host
         self.port = port
         self.binary = binary
         self.behaviors = behaviors
-        super(Memcache, self).__init__(**options)
+        super(Memcache, self).__init__(num)
 
     @property
     def identifier(self):

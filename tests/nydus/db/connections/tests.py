@@ -4,7 +4,7 @@ import mock
 
 from nydus.db import create_cluster
 from nydus.db.backends.base import BaseConnection
-from nydus.db.base import BaseCluster
+from nydus.db.base import BaseCluster, create_connection
 from nydus.db.exceptions import CommandError
 from nydus.db.routers.base import BaseRouter
 from nydus.db.routers.keyvalue import get_key
@@ -15,9 +15,9 @@ from tests import BaseTest, fixture
 
 
 class DummyConnection(BaseConnection):
-    def __init__(self, resp='foo', **kwargs):
+    def __init__(self, num, resp='foo', **kwargs):
         self.resp = resp
-        super(DummyConnection, self).__init__(**kwargs)
+        super(DummyConnection, self).__init__(num, **kwargs)
 
     def foo(self, *args, **kwargs):
         return self.resp
@@ -25,7 +25,9 @@ class DummyConnection(BaseConnection):
 
 class DummyErroringConnection(DummyConnection):
     def foo(self, *args, **kwargs):
-        raise ValueError(self.resp)
+        if self.resp == 'error':
+            raise ValueError(self.resp)
+        return self.resp
 
 
 class DummyRouter(BaseRouter):
@@ -81,6 +83,18 @@ class ConnectionTest(BaseTest):
         self.assertEquals(val, conn.foo.return_value)
 
 
+class CreateConnectionTest(BaseTest):
+    def test_does_apply_defaults(self):
+        conn = mock.Mock()
+        create_connection(conn, 0, {'resp': 'bar'}, {'foo': 'baz'})
+        conn.assert_called_once_with(0, foo='baz', resp='bar')
+
+    def test_handles_arg_list_with_defaults(self):
+        conn = mock.Mock()
+        create_connection(conn, 0, ['localhost'], {'foo': 'baz'})
+        conn.assert_called_once_with(0, 'localhost', foo='baz')
+
+
 class CreateClusterTest(BaseTest):
     def test_creates_cluster(self):
         c = create_cluster({
@@ -92,8 +106,8 @@ class CreateClusterTest(BaseTest):
         })
         self.assertEquals(len(c), 1)
 
-    @mock.patch('nydus.db.apply_defaults')
-    def test_does_call_apply_defaults(self, apply_defaults):
+    @mock.patch('nydus.db.base.create_connection')
+    def test_does_create_connection_with_defaults(self, create_connection):
         create_cluster({
             'backend': DummyConnection,
             'defaults': {'foo': 'baz'},
@@ -101,79 +115,91 @@ class CreateClusterTest(BaseTest):
                 0: {'resp': 'bar'},
             }
         })
-        apply_defaults.assert_called_once_with({'resp': 'bar'}, {'foo': 'baz'})
+        create_connection.assert_called_once_with(DummyConnection, 0, {'resp': 'bar'}, {'foo': 'baz'})
 
 
 class ClusterTest(BaseTest):
-    def test_init(self):
-        c = BaseCluster(
-            hosts={0: BaseConnection(num=1)},
+    def test_len_returns_num_backends(self):
+        p = BaseCluster(
+            backend=BaseConnection,
+            hosts={0: {}},
         )
-        self.assertEquals(len(c), 1)
+        self.assertEquals(len(p), 1)
 
     def test_proxy(self):
-        c = DummyConnection(num=1, resp='bar')
         p = BaseCluster(
-            hosts={0: c},
+            backend=DummyConnection,
+            hosts={0: {'resp': 'bar'}},
         )
         self.assertEquals(p.foo(), 'bar')
 
     def test_disconnect(self):
         c = mock.Mock()
         p = BaseCluster(
-            hosts={0: c},
+            backend=c,
+            hosts={0: {'resp': 'bar'}},
         )
         p.disconnect()
         c.disconnect.assert_called_once()
 
-    def test_with_router(self):
-        c = DummyConnection(num=0, resp='foo')
-        c2 = DummyConnection(num=1, resp='bar')
-
-        # test dummy router
-        r = DummyRouter
+    def test_with_split_router(self):
         p = BaseCluster(
-            hosts={0: c, 1: c2},
-            router=r,
+            router=DummyRouter,
+            backend=DummyConnection,
+            hosts={
+                0: {'resp': 'foo'},
+                1: {'resp': 'bar'},
+            },
         )
         self.assertEquals(p.foo(), 'foo')
         self.assertEquals(p.foo('foo'), 'bar')
 
-        # test default routing behavior
+    def test_default_routing_with_multiple_hosts(self):
         p = BaseCluster(
-            hosts={0: c, 1: c2},
+            backend=DummyConnection,
+            hosts={
+                0: {'resp': 'foo'},
+                1: {'resp': 'bar'},
+            },
         )
         self.assertEquals(p.foo(), ['foo', 'bar'])
         self.assertEquals(p.foo('foo'), ['foo', 'bar'])
 
-    def test_get_conn(self):
-        c = DummyConnection(alias='foo', num=0, resp='foo')
-        c2 = DummyConnection(alias='foo', num=1, resp='bar')
-
+    def test_get_conn_with_split_router(self):
         # test dummy router
-        r = DummyRouter
         p = BaseCluster(
-            hosts={0: c, 1: c2},
-            router=r,
+            backend=DummyConnection,
+            hosts={
+                0: {'resp': 'foo'},
+                1: {'resp': 'bar'},
+            },
+            router=DummyRouter,
         )
-        self.assertEquals(p.get_conn(), c)
-        self.assertEquals(p.get_conn('foo'), c2)
+        self.assertEquals(p.get_conn().num, 0)
+        self.assertEquals(p.get_conn('foo').num, 1)
 
+    def test_get_conn_default_routing_with_multiple_hosts(self):
         # test default routing behavior
         p = BaseCluster(
-            hosts={0: c, 1: c2},
+            backend=DummyConnection,
+            hosts={
+                0: {'resp': 'foo'},
+                1: {'resp': 'bar'},
+            },
         )
-        self.assertEquals(p.get_conn(), [c, c2])
-        self.assertEquals(p.get_conn('foo'), [c, c2])
+        self.assertEquals(map(lambda x: x.num, p.get_conn()), [0, 1])
+        self.assertEquals(map(lambda x: x.num, p.get_conn('foo')), [0, 1])
 
 
 class MapTest(BaseTest):
     @fixture
     def cluster(self):
-        c = DummyConnection(num=0, resp='foo')
-        c2 = DummyConnection(num=1, resp='bar')
         return BaseCluster(
-            hosts={0: c, 1: c2},
+            backend=DummyConnection,
+            hosts={
+                0: {'resp': 'foo'},
+                1: {'resp': 'bar'},
+            },
         )
 
     def test_handles_single_routing_results(self):
@@ -203,9 +229,10 @@ class MapWithFailuresTest(BaseTest):
     @fixture
     def cluster(self):
         return BaseCluster(
+            backend=DummyErroringConnection,
             hosts={
-                0: DummyConnection(num=0, resp='foo'),
-                1: DummyErroringConnection(num=1, resp='bar'),
+                0: {'resp': 'foo'},
+                1: {'resp': 'error'},
             },
             router=DummyRouter,
         )

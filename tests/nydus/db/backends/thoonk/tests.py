@@ -27,7 +27,7 @@ class ThoonkTest(unittest2.TestCase):
             c.redis.flushdb()
 
     def setUp(self):
-        self.ps = Thoonk(num=0, db_num=1)
+        self.ps = Thoonk(0, db=1)
         self.redis = self.ps.redis
         self.redis.flushdb()
 

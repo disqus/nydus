@@ -12,7 +12,7 @@ import redis
 class RedisTest(BaseTest):
 
     def setUp(self):
-        self.redis = Redis(num=0, db_num=1)
+        self.redis = Redis(num=0, db=1)
         self.redis.flushdb()
 
     def test_proxy(self):
@@ -20,7 +20,8 @@ class RedisTest(BaseTest):
 
     def test_with_cluster(self):
         p = BaseCluster(
-            hosts={0: self.redis},
+            backend=Redis,
+            hosts={0: {'db': 1}},
         )
         self.assertEquals(p.incr('RedisTest_with_cluster'), 1)
 

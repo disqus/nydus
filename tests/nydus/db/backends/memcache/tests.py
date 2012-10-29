@@ -32,7 +32,10 @@ class MemcacheTest(BaseTest):
 
     @mock.patch('pylibmc.Client.get')
     def test_with_cluster(self, get):
-        p = BaseCluster(hosts={0: self.memcache})
+        p = BaseCluster(
+            backend=Memcache,
+            hosts={0: {}},
+        )
         result = p.get('MemcacheTest_with_cluster')
         get.assert_called_once_with('MemcacheTest_with_cluster')
         self.assertEquals(result, get.return_value)

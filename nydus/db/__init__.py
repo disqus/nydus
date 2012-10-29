@@ -18,7 +18,7 @@ Disqus generic connections wrappers.
 __all__ = ('create_cluster', 'connections', 'Cluster')
 
 from nydus import conf
-from nydus.db.base import LazyConnectionHandler, BaseCluster
+from nydus.db.base import LazyConnectionHandler
 from nydus.db.routers.base import BaseRouter
 from nydus.utils import import_string, apply_defaults
 
@@ -44,17 +44,8 @@ def create_cluster(settings):
     >>>     }
     >>> })
     """
-    # Pull in our cluster
-    cluster = settings.get('cluster')
-    if not cluster:
-        Cluster = BaseCluster
-    elif isinstance(cluster, basestring):
-        Cluster = import_string(cluster)
-    else:
-        Cluster = cluster
-
     # Pull in our client
-    backend = settings.get('engine', settings.get('backend'))
+    backend = settings.pop('engine', settings.pop('backend', None))
     if isinstance(backend, basestring):
         Conn = import_string(backend)
     elif backend:
@@ -62,25 +53,29 @@ def create_cluster(settings):
     else:
         raise KeyError('backend')
 
-    # Pull in our router
-    router = settings.get('router')
-    if isinstance(router, basestring):
-        router = import_string(router)
-    elif router:
-        router = router
+    # Pull in our cluster
+    cluster = settings.pop('cluster', None)
+    if not cluster:
+        Cluster = Conn.get_cluster()
+    elif isinstance(cluster, basestring):
+        Cluster = import_string(cluster)
     else:
-        router = BaseRouter
+        Cluster = cluster
 
-    defaults = settings.get('defaults', {})
+    # Pull in our router
+    router = settings.pop('router', None)
+    if not router:
+        Router = BaseRouter
+    elif isinstance(router, basestring):
+        Router = import_string(router)
+    else:
+        Router = router
 
     # Build the connection cluster
     return Cluster(
-        router=router,
-        hosts=dict(
-            (conn_number, Conn(num=conn_number, **apply_defaults(host_settings, defaults)))
-            for conn_number, host_settings
-            in settings['hosts'].iteritems()
-        ),
+        router=Router,
+        backend=Conn,
+        **settings
     )
 
 connections = LazyConnectionHandler(lambda: conf.CONNECTIONS)

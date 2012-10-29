@@ -8,6 +8,8 @@ nydus.db.backends.base
 
 __all__ = ('BaseConnection',)
 
+from nydus.db.base import BaseCluster
+
 
 class BasePipeline(object):
     """
@@ -89,3 +91,10 @@ class BaseConnection(object):
         Return a new pipeline instance (bound to this connection).
         """
         raise NotImplementedError
+
+    @classmethod
+    def get_cluster(cls):
+        """
+        Return the default cluster type for this backend.
+        """
+        return BaseCluster

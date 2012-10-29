@@ -8,8 +8,29 @@ nydus.db.base
 
 __all__ = ('LazyConnectionHandler', 'BaseCluster')
 
+import collections
 from nydus.db.map import DistributedContextManager
 from nydus.db.routers import BaseRouter, routing_params
+from nydus.utils import apply_defaults
+
+
+def iter_hosts(hosts):
+    # this can either be a dictionary (with the key acting as the numeric
+    # index) or it can be a sorted list.
+    if isinstance(hosts, collections.Mapping):
+        return hosts.iteritems()
+    return enumerate(hosts)
+
+
+def create_connection(Connection, num, host_settings, defaults):
+    # host_settings can be an iterable or a dictionary depending on the style
+    # of connection (some connections share options and simply just need to
+    # pass a single host, or a list of hosts)
+    if isinstance(host_settings, collections.Mapping):
+        return Connection(num, **apply_defaults(host_settings, defaults or {}))
+    elif isinstance(host_settings, collections.Iterable):
+        return Connection(num, *host_settings, **defaults or {})
+    return Connection(num, host_settings, **defaults or {})
 
 
 class BaseCluster(object):
@@ -19,8 +40,12 @@ class BaseCluster(object):
     class MaxRetriesExceededError(Exception):
         pass
 
-    def __init__(self, hosts, router=BaseRouter, max_connection_retries=20):
-        self.hosts = hosts
+    def __init__(self, hosts, backend, router=BaseRouter, max_connection_retries=20, defaults=None):
+        self.hosts = dict(
+            (conn_number, create_connection(backend, conn_number, host_settings, defaults))
+            for conn_number, host_settings
+            in iter_hosts(hosts)
+        )
         self.max_connection_retries = max_connection_retries
         self.install_router(router)
 

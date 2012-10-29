@@ -36,8 +36,8 @@ class BaseRouterTest(BaseTest):
         pass
 
     def setUp(self):
-        self.hosts = dict((i, DummyConnection(i)) for i in range(5))
-        self.cluster = BaseCluster(router=self.Router, hosts=self.hosts)
+        self.hosts = dict((i, {}) for i in xrange(5))
+        self.cluster = BaseCluster(router=self.Router, hosts=self.hosts, backend=DummyConnection)
         self.router = self.cluster.router
 
     def get_dbs(self, *args, **kwargs):

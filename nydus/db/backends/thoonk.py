@@ -20,14 +20,14 @@ class Thoonk(BaseConnection):
     retryable_exceptions = frozenset([RedisError])
     supports_pipelines = False
 
-    def __init__(self, host='localhost', port=6379, db=0, timeout=None, listen=False, **options):
+    def __init__(self, num, host='localhost', port=6379, db=0, timeout=None, listen=False):
         self.host = host
         self.port = port
         self.db = db
         self.timeout = timeout
         self.pubsub = None
         self.listen = listen
-        super(Thoonk, self).__init__(**options)
+        super(Thoonk, self).__init__(num)
 
     @property
     def identifier(self):
