@@ -3,9 +3,38 @@ from __future__ import absolute_import
 from nydus.db import create_cluster
 from nydus.db.base import BaseCluster
 from nydus.db.backends.redis import Redis
-from nydus.testutils import BaseTest
+from nydus.testutils import BaseTest, fixture
 import mock
 import redis
+
+
+class RedisPipelineTest(BaseTest):
+    @fixture
+    def cluster(self):
+        return create_cluster({
+            'backend': 'nydus.db.backends.redis.Redis',
+            'router': 'nydus.db.routers.keyvalue.PartitionRouter',
+            'hosts': {
+                0: {'db': 5},
+                1: {'db': 6},
+                2: {'db': 7},
+                3: {'db': 8},
+                4: {'db': 9},
+            }
+        })
+
+    # XXX: technically we're testing the Nydus map code, and not ours
+    def test_pipelined_map(self):
+        chars = ('a', 'b', 'c', 'd', 'e', 'f')
+        with self.cluster.map() as conn:
+            [conn.set(c, i) for i, c in enumerate(chars)]
+            res = [conn.get(c) for c in chars]
+        self.assertEqual(range(len(chars)), [int(r) for r in res])
+
+    def test_map_single_connection(self):
+        with self.cluster.map() as conn:
+            conn.set('a', '1')
+        self.assertEquals(self.cluster.get('a'), '1')
 
 
 class RedisTest(BaseTest):
@@ -29,24 +58,6 @@ class RedisTest(BaseTest):
 
     def test_provides_identifier(self):
         self.assertEquals(self.redis.identifier, str(self.redis.identifier))
-
-    def test_pipelined_map(self):
-        redis = create_cluster({
-            'backend': 'nydus.db.backends.redis.Redis',
-            'router': 'nydus.db.routers.keyvalue.PartitionRouter',
-            'hosts': {
-                0: {'db': 5},
-                1: {'db': 6},
-                2: {'db': 7},
-                3: {'db': 8},
-                4: {'db': 9},
-            }
-        })
-        chars = ('a', 'b', 'c', 'd', 'e', 'f')
-        with redis.map() as conn:
-            [conn.set(c, i) for i, c in enumerate(chars)]
-            res = [conn.get(c) for c in chars]
-        self.assertEqual(range(len(chars)), [int(r) for r in res])
 
     @mock.patch('nydus.db.backends.redis.RedisClient')
     def test_client_instantiates_with_kwargs(self, RedisClient):

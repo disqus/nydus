@@ -62,7 +62,7 @@ class BaseDistributedConnection(object):
 
         # Don't bother with the pooling if we only need to do one operation on a single machine
         elif num_commands == 1:
-            db_num, (command,) = pending_commands.items()
+            db_num, (command,) = pending_commands.items()[0]
             self._commands = [command.resolve(self._cluster[db_num])]
 
         else:
