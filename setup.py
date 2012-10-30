@@ -18,10 +18,11 @@ tests_require = [
     'mock',
     'nose',
     'psycopg2',
+    'pycassa',
     'pylibmc',
     'redis',
     'riak',
-    'thoonk==1.0.1.0',
+    'thoonk',
     'unittest2',
 ]
 

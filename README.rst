@@ -145,3 +145,17 @@ An additional option for distributing queries is the round robin router::
     >>>         0: {'db': 0},
     >>>     },
     >>> )}
+
+Pycassa
+-------
+
+Basic connection management for pycassa (Cassandra) clusters is supported, but we use a non-standard syntax
+for creating clusters as routing behavior and per-connection options are not useful in this context::
+
+    >>> pycassa = create_cluster({
+    >>>     'backend': 'nydus.db.backends.pycassa.Pycassa',
+    >>>     'hosts': ['localhost'],
+    >>>     'keyspace': 'test',
+    >>> })
+
+.. note:: Pycassa handles routing of hosts internally, which means things like ``map`` have no affect.

@@ -1,10 +1,9 @@
 from __future__ import absolute_import
 
-from tests import BaseTest
-
 from nydus.db import create_cluster
 from nydus.db.base import BaseCluster
 from nydus.db.backends.redis import Redis
+from nydus.testutils import BaseTest
 import mock
 import redis
 

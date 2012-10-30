@@ -9,9 +9,8 @@ from nydus.db.exceptions import CommandError
 from nydus.db.routers.base import BaseRouter
 from nydus.db.routers.keyvalue import get_key
 from nydus.db.promise import EventualCommand
+from nydus.testutils import BaseTest, fixture
 from nydus.utils import apply_defaults
-
-from tests import BaseTest, fixture
 
 
 class DummyConnection(BaseConnection):

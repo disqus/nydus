@@ -3,9 +3,9 @@ from __future__ import absolute_import
 import mock
 from httplib import HTTPException
 from nydus.db.backends.riak import Riak
+from nydus.testutils import BaseTest
 from riak import RiakClient, RiakError
 from socket import error as SocketError
-from tests import BaseTest
 
 
 class RiakTest(BaseTest):

@@ -7,11 +7,11 @@ from inspect import getargspec
 
 from mock import patch
 
-from tests import BaseTest
 from nydus.db.base import BaseCluster
 from nydus.db.backends import BaseConnection
 from nydus.db.routers import BaseRouter, RoundRobinRouter
 from nydus.db.routers.keyvalue import ConsistentHashingRouter
+from nydus.testutils import BaseTest
 
 
 def _get_func(func):
