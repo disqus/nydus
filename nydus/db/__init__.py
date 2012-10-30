@@ -17,6 +17,8 @@ Disqus generic connections wrappers.
 
 __all__ = ('create_cluster', 'connections', 'Cluster')
 
+import copy
+
 from nydus import conf
 from nydus.db.base import LazyConnectionHandler
 from nydus.db.routers.base import BaseRouter
@@ -45,6 +47,7 @@ def create_cluster(settings):
     >>> })
     """
     # Pull in our client
+    settings = copy.deepcopy(settings)
     backend = settings.pop('engine', settings.pop('backend', None))
     if isinstance(backend, basestring):
         Conn = import_string(backend)
