@@ -121,6 +121,10 @@ class BaseCluster(object):
         return [self[n] for n in self.router.get_dbs(attr=attr, args=args, kwargs=kwargs, **fkwargs)]
 
 
+# Legacy compat import
+Cluster = BaseCluster
+
+
 class CallProxy(object):
     """
     Handles routing function calls to the proper connection.
