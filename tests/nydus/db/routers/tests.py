@@ -1,11 +1,10 @@
 from __future__ import absolute_import
 
+import mock
 import time
 
 from collections import Iterable
 from inspect import getargspec
-
-from mock import patch
 
 from nydus.db.base import BaseCluster
 from nydus.db.backends import BaseConnection
@@ -51,7 +50,7 @@ class BaseRouterTest(BaseTest):
         self.assertIsInstance(db_nums, Iterable)
 
     def test_get_dbs_unabletosetuproute(self):
-        with patch.object(self.router, '_setup_router', return_value=False):
+        with mock.patch.object(self.router, '_setup_router', return_value=False):
             with self.assertRaises(BaseRouter.UnableToSetupRouter):
                 self.get_dbs(attr='test', args=('foo',))
 
@@ -75,8 +74,8 @@ class BaseRouterTest(BaseTest):
         self.assertEquals(self.hosts.keys(), self.get_dbs(attr='test'))
 
     def test_get_dbs_handles_exception(self):
-        with patch.object(self.router, '_route') as _route:
-            with patch.object(self.router, '_handle_exception') as _handle_exception:
+        with mock.patch.object(self.router, '_route') as _route:
+            with mock.patch.object(self.router, '_handle_exception') as _handle_exception:
                 _route.side_effect = self.TestException()
 
                 self.get_dbs(attr='test', args=('foo',))
@@ -159,7 +158,7 @@ class BaseRoundRobinRouterTest(BaseRouterTest):
 
         self.assertEqual(self.router._get_db_attempts, 1)
 
-    @patch('nydus.db.routers.RoundRobinRouter.check_down_connections')
+    @mock.patch('nydus.db.routers.base.RoundRobinRouter.check_down_connections')
     def test__pre_routing_check_down_connections(self, _check_down_connections):
         self.router._get_db_attempts = RoundRobinRouter.attempt_reconnect_threshold + 1
 
@@ -167,7 +166,7 @@ class BaseRoundRobinRouterTest(BaseRouterTest):
 
         self.assertTrue(_check_down_connections.called)
 
-    @patch('nydus.db.routers.RoundRobinRouter.mark_connection_down')
+    @mock.patch('nydus.db.routers.base.RoundRobinRouter.mark_connection_down')
     def test__pre_routing_retry_for(self, _mark_connection_down):
         db_num = 0
 
@@ -175,12 +174,20 @@ class BaseRoundRobinRouterTest(BaseRouterTest):
 
         _mark_connection_down.assert_called_with(db_num)
 
-    @patch('nydus.db.routers.RoundRobinRouter.mark_connection_up')
-    def test__post_routing_mark_connection_up(self, _mark_connection_up):
+    @mock.patch('nydus.db.routers.base.RoundRobinRouter.mark_connection_up')
+    def test_online_connections_dont_get_marked_as_up(self, mark_connection_up):
         db_nums = [0]
 
         self.assertEqual(self.router._post_routing(attr='test', db_nums=db_nums, args=('foo',)), db_nums)
-        _mark_connection_up.assert_called_with(db_nums[0])
+        self.assertFalse(mark_connection_up.called)
+
+    @mock.patch('nydus.db.routers.base.RoundRobinRouter.mark_connection_up')
+    def test_offline_connections_get_marked_as_up(self, mark_connection_up):
+        self.router.mark_connection_down(0)
+        db_nums = [0]
+
+        self.assertEqual(self.router._post_routing(attr='test', db_nums=db_nums, args=('foo',)), db_nums)
+        mark_connection_up.assert_called_with(db_nums[0])
 
 
 class RoundRobinRouterTest(BaseRoundRobinRouterTest):
