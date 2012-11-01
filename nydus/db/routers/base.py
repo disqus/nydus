@@ -233,7 +233,7 @@ class RoundRobinRouter(BaseRouter):
 
     @routing_params
     def _post_routing(self, attr, db_nums, args, kwargs, **fkwargs):
-        if db_nums:
+        if db_nums and db_nums[0] in self._down_connections:
             self.mark_connection_up(db_nums[0])
 
         return db_nums
