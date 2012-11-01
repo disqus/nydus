@@ -8,6 +8,7 @@ nydus.db.backends.redis
 
 from __future__ import absolute_import
 
+from itertools import izip
 from redis import Redis as RedisClient
 from redis import RedisError
 
@@ -21,13 +22,13 @@ class RedisPipeline(BasePipeline):
         self.pipe = connection.pipeline()
 
     def add(self, command):
-        self.pending.append(command)
         name, args, kwargs = command.get_command()
+        self.pending.append(command)
         # ensure the command is executed in the pipeline
         getattr(self.pipe, name)(*args, **kwargs)
 
     def execute(self):
-        return self.pipe.execute()
+        return dict(izip(self.pending, self.pipe.execute()))
 
 
 class Redis(BaseConnection):

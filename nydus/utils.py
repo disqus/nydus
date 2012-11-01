@@ -37,6 +37,15 @@ def apply_defaults(host, defaults):
     return host
 
 
+def peek(value):
+    generator = iter(value)
+    prev = generator.next()
+    for item in generator:
+        yield prev, item
+        prev = item
+    yield prev, None
+
+
 class Worker(Thread):
     def __init__(self, queue):
         Thread.__init__(self)
