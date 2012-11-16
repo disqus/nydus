@@ -45,7 +45,9 @@ class ConsistentHashingRouter(RoundRobinRouter):
 
     def mark_connection_up(self, db_num):
         db_num = self.ensure_db_num(db_num)
-        self._hash.add_node(self._db_num_id_map[db_num])
+        node_key = self._db_num_id_map[db_num]
+        if self._hash.get_node(node_key) is None:
+            self._hash.add_node(node_key)
 
         super(ConsistentHashingRouter, self).mark_connection_up(db_num)
 
