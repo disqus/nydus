@@ -21,13 +21,14 @@ class Riak(BaseConnection):
     retryable_exceptions = frozenset([socket.error, httplib.HTTPException, RiakError])
     supports_pipelines = False
 
-    def __init__(self, host='127.0.0.1', port=8098, prefix='riak', mapred_prefix='mapred', client_id=None, **options):
+    def __init__(self, num, host='127.0.0.1', port=8098, prefix='riak', mapred_prefix='mapred', client_id=None, **options):
+
         self.host = host
         self.port = port
         self.prefix = prefix
         self.mapred_prefix = mapred_prefix
         self.client_id = client_id
-        super(Riak, self).__init__(**options)
+        super(Riak, self).__init__(num)
 
     @property
     def identifier(self):
