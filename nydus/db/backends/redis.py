@@ -9,7 +9,7 @@ nydus.db.backends.redis
 from __future__ import absolute_import
 
 from itertools import izip
-from redis import Redis as RedisClient
+from redis import Redis as RedisClient, StrictRedis as StrictRedisClient
 from redis import RedisError
 
 from nydus.db.backends import BaseConnection, BasePipeline
@@ -31,7 +31,11 @@ class RedisPipeline(BasePipeline):
         return dict(izip(self.pending, self.pipe.execute()))
 
 
-class Redis(BaseConnection):
+class RedisBase(BaseConnection):
+    """
+    Base class shared by Redis and StrictRedis
+    Child classes should implement connect()
+    """
     # Exceptions that can be retried by this backend
     retryable_exceptions = frozenset([RedisError])
     supports_pipelines = True
@@ -43,8 +47,8 @@ class Redis(BaseConnection):
         self.db = db
         self.unix_socket_path = unix_socket_path
         self.timeout = timeout
-        self.__password = password
-        super(Redis, self).__init__(num)
+        self._password = password
+        super(RedisBase, self).__init__(num)
 
     @property
     def identifier(self):
@@ -52,14 +56,26 @@ class Redis(BaseConnection):
         mapping['klass'] = self.__class__.__name__
         return "redis://%(host)s:%(port)s/%(db)s" % mapping
 
-    def connect(self):
-        return RedisClient(
-            host=self.host, port=self.port, db=self.db,
-            socket_timeout=self.timeout, password=self.__password,
-            unix_socket_path=self.unix_socket_path)
-
     def disconnect(self):
         self.connection.disconnect()
 
     def get_pipeline(self, *args, **kwargs):
         return RedisPipeline(self)
+
+
+class Redis(RedisBase):
+
+    def connect(self):
+        return RedisClient(
+            host=self.host, port=self.port, db=self.db,
+            socket_timeout=self.timeout, password=self._password,
+            unix_socket_path=self.unix_socket_path)
+
+
+class StrictRedis(RedisBase):
+
+    def connect(self):
+        return StrictRedisClient(
+            host=self.host, port=self.port, db=self.db,
+            socket_timeout=self.timeout, password=self._password,
+            unix_socket_path=self.unix_socket_path)
