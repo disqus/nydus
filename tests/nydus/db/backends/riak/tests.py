@@ -24,6 +24,9 @@ class RiakTest(BaseTest):
             'prefix': 'kair',
             'mapred_prefix': 'derpam',
             'client_id': 'MjgxMDg2MzQx',
+            'transport_options': {},
+            'transport_class': mock.Mock,
+            'solr_transport_class': mock.Mock,
         }
 
         self.conn = Riak(num=0)
@@ -48,14 +51,18 @@ class RiakTest(BaseTest):
         self.conn.connect()
 
         _RiakClient.assert_called_with(host=self.conn.host, port=self.conn.port, prefix=self.conn.prefix, \
-                                        mapred_prefix=self.conn.mapred_prefix, client_id=self.conn.client_id)
+                                        mapred_prefix=self.conn.mapred_prefix, client_id=self.conn.client_id, \
+                                        transport_options=self.conn.transport_options, transport_class=self.conn.transport_class, \
+                                        solr_transport_class=self.conn.solr_transport_class)
 
     @mock.patch('nydus.db.backends.riak.RiakClient')
     def test_connect_riakclient_modified_options(self, _RiakClient):
         self.modified_conn.connect()
 
         _RiakClient.assert_called_with(host=self.modified_conn.host, port=self.modified_conn.port, prefix=self.modified_conn.prefix, \
-                                        mapred_prefix=self.modified_conn.mapred_prefix, client_id=self.modified_conn.client_id)
+                                        mapred_prefix=self.modified_conn.mapred_prefix, client_id=self.modified_conn.client_id, \
+                                        transport_options=self.modified_conn.transport_options, transport_class=self.modified_conn.transport_class, \
+                                        solr_transport_class=self.modified_conn.solr_transport_class)
 
     def test_connect_returns_riakclient(self):
         client = self.conn.connect()
