@@ -26,8 +26,8 @@ class RiakTest(BaseTest):
             'client_id': 'MjgxMDg2MzQx',
         }
 
-        self.conn = Riak(num=0)
-        self.modified_conn = Riak(num=1, **self.modified_props)
+        self.conn = Riak(0)
+        self.modified_conn = Riak(1, **self.modified_props)
 
     def test_init_defaults(self):
         self.assertDictContainsSubset(self.expected_defaults, self.conn.__dict__)
