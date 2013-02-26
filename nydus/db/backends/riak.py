@@ -21,7 +21,7 @@ class Riak(BaseConnection):
     retryable_exceptions = frozenset([socket.error, httplib.HTTPException, RiakError])
     supports_pipelines = False
 
-    def __init__(self, host='127.0.0.1', port=8098, prefix='riak', mapred_prefix='mapred', client_id=None,
+    def __init__(self, num, host='127.0.0.1', port=8098, prefix='riak', mapred_prefix='mapred', client_id=None,
         transport_class=None, solr_transport_class=None, transport_options=None, **options):
 
         self.host = host
@@ -32,7 +32,7 @@ class Riak(BaseConnection):
         self.transport_class = transport_class
         self.solr_transport_class = solr_transport_class
         self.transport_options = transport_options
-        super(Riak, self).__init__(**options)
+        super(Riak, self).__init__(num)
 
     @property
     def identifier(self):
