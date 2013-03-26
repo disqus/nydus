@@ -35,7 +35,7 @@ class Pycassa(BaseConnection):
         self.connection.dispose()
 
     @classmethod
-    def get_cluster(self):
+    def get_cluster(cls):
         return PycassaCluster
 
 
