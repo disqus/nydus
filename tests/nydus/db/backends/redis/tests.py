@@ -54,7 +54,7 @@ class RedisTest(BaseTest):
         self.assertEquals(p.incr('RedisTest_with_cluster'), 1)
 
     def test_provides_retryable_exceptions(self):
-        self.assertEquals(Redis.retryable_exceptions, frozenset([redis.RedisError]))
+        self.assertEquals(Redis.retryable_exceptions, frozenset([redis.ConnectionError, redis.InvalidResponse]))
 
     def test_provides_identifier(self):
         self.assertEquals(self.redis.identifier, str(self.redis.identifier))
