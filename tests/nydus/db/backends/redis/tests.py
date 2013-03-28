@@ -5,7 +5,7 @@ from nydus.db.base import BaseCluster
 from nydus.db.backends.redis import Redis
 from nydus.testutils import BaseTest, fixture
 import mock
-import redis
+import redis as redis_
 
 
 class RedisPipelineTest(BaseTest):
@@ -54,7 +54,7 @@ class RedisTest(BaseTest):
         self.assertEquals(p.incr('RedisTest_with_cluster'), 1)
 
     def test_provides_retryable_exceptions(self):
-        self.assertEquals(Redis.retryable_exceptions, frozenset([redis.ConnectionError, redis.InvalidResponse]))
+        self.assertEquals(Redis.retryable_exceptions, frozenset([redis_.ConnectionError, redis_.InvalidResponse]))
 
     def test_provides_identifier(self):
         self.assertEquals(self.redis.identifier, str(self.redis.identifier))
@@ -122,3 +122,25 @@ class RedisTest(BaseTest):
 
         self.assertEquals(RedisClient().pipeline().execute.call_count, 1)
         RedisClient().pipeline().execute.assert_called_with()
+
+    def test_normal_exceptions_dont_break_the_cluster(self):
+        redis = create_cluster({
+            'engine': 'nydus.db.backends.redis.Redis',
+            'router': 'nydus.db.routers.keyvalue.ConsistentHashingRouter',
+            'hosts': {
+                0: {'db': 0},
+                1: {'db': 1},
+            }
+        })
+
+        # Create a normal key
+        redis.set('a', 0)
+
+        with self.assertRaises(redis_.ResponseError):
+            # We are going to preform an operation on a key that is not a set
+            # This call *should* raise the actual Redis exception, and
+            # not continue on to think the host is down.
+            redis.scard('a')
+
+        # This shouldn't raise a HostListExhausted exception
+        redis.get('a')
