@@ -10,7 +10,7 @@ from __future__ import absolute_import
 
 from itertools import izip
 from redis import Redis as RedisClient
-from redis import RedisError
+from redis import ConnectionError, InvalidResponse
 
 from nydus.db.backends import BaseConnection, BasePipeline
 
@@ -33,7 +33,7 @@ class RedisPipeline(BasePipeline):
 
 class Redis(BaseConnection):
     # Exceptions that can be retried by this backend
-    retryable_exceptions = frozenset([RedisError])
+    retryable_exceptions = frozenset([ConnectionError, InvalidResponse])
     supports_pipelines = True
 
     def __init__(self, num, host='localhost', port=6379, db=0, timeout=None,
