@@ -70,11 +70,10 @@ class BaseCluster(object):
 
         results = []
         for conn in connections:
-            func = conn
-            for piece in path.split('.'):
-                func = getattr(func, piece)
-
             for retry in xrange(self.max_connection_retries):
+                func = conn
+                for piece in path.split('.'):
+                    func = getattr(func, piece)
                 try:
                     results.append(func(*args, **kwargs))
                 except tuple(conn.retryable_exceptions), e:
