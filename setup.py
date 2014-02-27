@@ -14,7 +14,7 @@ else:
     setup_requires = []
 
 tests_require = [
-    'Django>=1.2,<1.5',
+    'Django>=1.2',
     'mock',
     'nose',
     'psycopg2',
