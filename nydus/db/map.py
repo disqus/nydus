@@ -32,6 +32,9 @@ class BaseDistributedConnection(object):
 
         # build up a list of pending commands and their routing information
         for command in self._commands:
+            if not command.was_called():
+                continue
+
             if self._cluster.router:
                 name, args, kwargs = command.get_command()
                 db_nums = self._cluster.router.get_dbs(

@@ -3,6 +3,7 @@ from __future__ import absolute_import
 from nydus.db import create_cluster
 from nydus.db.base import BaseCluster
 from nydus.db.backends.redis import Redis
+from nydus.db.promise import EventualCommand
 from nydus.testutils import BaseTest, fixture
 import mock
 import redis as redis_
@@ -35,6 +36,13 @@ class RedisPipelineTest(BaseTest):
         with self.cluster.map() as conn:
             conn.set('a', '1')
         self.assertEquals(self.cluster.get('a'), '1')
+
+    def test_no_proxy_without_call_on_map(self):
+        with self.cluster.map() as conn:
+            result = conn.incr
+
+        assert type(result) is EventualCommand
+        assert not result.was_called()
 
 
 class RedisTest(BaseTest):

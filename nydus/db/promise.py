@@ -41,6 +41,7 @@ class EventualCommand(object):
 
     def __init__(self, attr, args=None, kwargs=None):
         self.__attr = attr
+        self.__called = False
         self.__wrapped = None
         self.__resolved = False
         self.__args = args or []
@@ -48,6 +49,7 @@ class EventualCommand(object):
         self.__ident = ':'.join(map(lambda x: str(hash(str(x))), [self.__attr, self.__args, self.__kwargs]))
 
     def __call__(self, *args, **kwargs):
+        self.__called = True
         self.__args = args
         self.__kwargs = kwargs
         self.__ident = ':'.join(map(lambda x: str(hash(str(x))), [self.__attr, self.__args, self.__kwargs]))
@@ -166,6 +168,10 @@ class EventualCommand(object):
     @property
     def is_error(self):
         return isinstance(self.__wrapped, CommandError)
+
+    @promise_method
+    def was_called(self):
+        return self.__called
 
     @promise_method
     def resolve(self, conn):

@@ -14,10 +14,8 @@ else:
     setup_requires = []
 
 tests_require = [
-    'Django>=1.2',
     'mock',
     'nose',
-    'psycopg2',
     'pycassa',
     'pylibmc',
     'redis',
