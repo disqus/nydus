@@ -31,7 +31,7 @@ class Riak(BaseConnection):
         self.client_id = client_id
         self.transport_class = transport_class
         self.solr_transport_class = solr_transport_class
-        self.transport_options = transport_options
+        self.transport_options = transport_options or {}
         super(Riak, self).__init__(num)
 
     @property
