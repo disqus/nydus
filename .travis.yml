@@ -5,10 +5,12 @@ python:
 env:
   - DJANGO=1.2.7
   - DJANGO=1.3.1
-  - DJANGO=1.4
+  - DJANGO=1.4.12
+  - DJANGO=1.5.7
+  - DJANGO=1.6.4
 install:
-  - pip install -q Django==$DJANGO --use-mirrors
-  - pip install -q flake8 --use-mirrors
-  - pip install -q -e . --use-mirrors
+  - pip install -q Django==$DJANGO
+  - pip install -q flake8
+  - pip install -q -e .
 script:
   - make test
