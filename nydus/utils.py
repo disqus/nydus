@@ -62,7 +62,7 @@ class Worker(Thread):
             try:
                 result = func(*args, **kwargs)
                 self.results[ident].append(result)
-            except Exception, e:
+            except Exception as e:
                 self.results[ident].append(e)
             finally:
                 self.queue.task_done()

@@ -74,7 +74,7 @@ class BaseRouter(object):
 
         try:
             db_nums = self._route(attr=attr, args=args, kwargs=kwargs, **fkwargs)
-        except Exception, e:
+        except Exception as e:
             self._handle_exception(e)
             db_nums = []
 

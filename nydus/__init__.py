@@ -9,5 +9,5 @@ nydus
 try:
     VERSION = __import__('pkg_resources') \
         .get_distribution('nydus').version
-except Exception, e:
+except Exception:
     VERSION = 'unknown'
