@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import mock
+import six
 
 from nydus.db import create_cluster
 from nydus.db.backends.base import BaseConnection
@@ -350,7 +351,7 @@ class EventualCommandTest(BaseTest):
         ec = EventualCommand('foo')
         ec.resolve_as('biz')
 
-        self.assertEquals(unicode(ec), u'biz')
+        self.assertEquals(six.text_type(ec), u'biz')
 
     def test_command_error_returns_as_error(self):
         ec = EventualCommand('foo')

@@ -1,9 +1,12 @@
-import unittest2
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 
 NOTSET = object()
 
 
-class BaseTest(unittest2.TestCase):
+class BaseTest(unittest.TestCase):
     def setUp(self):
         pass
 

@@ -12,6 +12,8 @@ from nydus.db.routers import BaseRouter, RoundRobinRouter
 from nydus.db.routers.keyvalue import ConsistentHashingRouter
 from nydus.testutils import BaseTest
 
+from six.moves import range
+
 
 def _get_func(func):
     return getattr(func, '__wraps__', func)
@@ -35,7 +37,7 @@ class BaseRouterTest(BaseTest):
         pass
 
     def setUp(self):
-        self.hosts = dict((i, {}) for i in xrange(5))
+        self.hosts = dict((i, {}) for i in range(5))
         self.cluster = BaseCluster(router=self.Router, hosts=self.hosts, backend=DummyConnection)
         self.router = self.cluster.router
 

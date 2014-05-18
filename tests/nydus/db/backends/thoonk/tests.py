@@ -1,11 +1,17 @@
 from __future__ import absolute_import
 
-import unittest2
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
+
 from nydus.db.backends.thoonk import Thoonk
 from nydus.db import create_cluster
 
+from six.moves import range
 
-class ThoonkTest(unittest2.TestCase):
+
+class ThoonkTest(unittest.TestCase):
     def get_cluster(self, router):
         cluster = create_cluster({
             'backend': 'nydus.db.backends.thoonk.Thoonk',
@@ -60,7 +66,7 @@ class ThoonkTest(unittest2.TestCase):
         size = 20
 
         # put jobs onto the queue
-        for x in xrange(0, size):
+        for x in range(0, size):
             jps = pubsub.job('testjob')
             jid = jps.put(str(x))
             if id(jps) not in jobs:
@@ -73,7 +79,7 @@ class ThoonkTest(unittest2.TestCase):
             self.assertEqual(len(v), size / 5)
 
         # make sure we fishi
-        for x in xrange(0, size):
+        for x in range(0, size):
             jps = pubsub.job('testjob')
             jid, job, cancel_count = jps.get()
             jps.finish(jid)
