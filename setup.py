@@ -30,6 +30,7 @@ dependency_links = [
 
 
 install_requires = [
+    'six',
 ]
 
 setup(

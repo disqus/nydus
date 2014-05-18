@@ -13,6 +13,8 @@ from nydus.db.map import DistributedContextManager
 from nydus.db.routers import BaseRouter, routing_params
 from nydus.utils import apply_defaults
 
+from six.moves import range
+
 
 def iter_hosts(hosts):
     # this can either be a dictionary (with the key acting as the numeric
@@ -70,13 +72,13 @@ class BaseCluster(object):
 
         results = []
         for conn in connections:
-            for retry in xrange(self.max_connection_retries):
+            for retry in range(self.max_connection_retries):
                 func = conn
                 for piece in path.split('.'):
                     func = getattr(func, piece)
                 try:
                     results.append(func(*args, **kwargs))
-                except tuple(conn.retryable_exceptions), e:
+                except tuple(conn.retryable_exceptions) as e:
                     if not self.router.retryable:
                         raise e
                     elif retry == self.max_connection_retries - 1:

@@ -2,6 +2,8 @@ from collections import defaultdict
 from Queue import Queue, Empty
 from threading import Thread
 
+from six.moves import range
+
 
 # import_string comes form Werkzeug
 # http://werkzeug.pocoo.org
@@ -75,7 +77,7 @@ class ThreadPool(object):
         self.queue = Queue()
         self.workers = []
         self.tasks = []
-        for worker in xrange(workers):
+        for worker in range(workers):
             self.workers.append(Worker(self.queue))
 
     def add(self, ident, func, args=None, kwargs=None):
