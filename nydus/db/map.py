@@ -11,6 +11,8 @@ from nydus.utils import ThreadPool
 from nydus.db.exceptions import CommandError
 from nydus.db.promise import EventualCommand, change_resolution
 
+import six
+
 
 class BaseDistributedConnection(object):
     def __init__(self, cluster, workers=None, fail_silently=False):
@@ -122,7 +124,7 @@ class DistributedConnection(BaseDistributedConnection):
         pool = self.get_pool(commands)
 
         # execute our pending commands either in the pool, or using a pipeline
-        for db_num, command_list in commands.iteritems():
+        for db_num, command_list in six.iteritems(commands):
             for command in command_list:
                 # XXX: its important that we clone the command here so we dont override anything
                 # in the EventualCommand proxy (it can only resolve once)
@@ -144,14 +146,14 @@ class PipelinedDistributedConnection(BaseDistributedConnection):
         pool = self.get_pool(commands)
 
         # execute our pending commands either in the pool, or using a pipeline
-        for db_num, command_list in commands.iteritems():
+        for db_num, command_list in six.iteritems(commands):
             pipes[db_num] = cluster[db_num].get_pipeline()
             for command in command_list:
                 # add to pipeline
                 pipes[db_num].add(command.clone())
 
         # We need to finalize our commands with a single execute in pipelines
-        for db_num, pipe in pipes.iteritems():
+        for db_num, pipe in six.iteritems(pipes):
             pool.add(db_num, pipe.execute, (), {})
 
         # Consolidate commands with their appropriate results
@@ -160,7 +162,7 @@ class PipelinedDistributedConnection(BaseDistributedConnection):
         # Results get grouped by their command signature, so we have to separate the logic
         results = defaultdict(list)
 
-        for db_num, db_results in db_result_map.iteritems():
+        for db_num, db_results in six.iteritems(db_result_map):
             # Pipelines always execute on a single database
             assert len(db_results) == 1
             db_results = db_results[0]
@@ -171,7 +173,7 @@ class PipelinedDistributedConnection(BaseDistributedConnection):
                     results[command].append(db_results)
                 continue
 
-            for command, result in db_results.iteritems():
+            for command, result in six.iteritems(db_results):
                 results[command].append(result)
 
         return results

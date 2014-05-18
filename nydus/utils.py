@@ -1,6 +1,7 @@
 from collections import defaultdict
 from threading import Thread
 
+import six
 from six.moves import range
 from six.moves.queue import Queue, Empty
 
@@ -33,7 +34,7 @@ def import_string(import_name, silent=False):
 
 
 def apply_defaults(host, defaults):
-    for key, value in defaults.iteritems():
+    for key, value in six.iteritems(defaults):
         if key not in host:
             host[key] = value
     return host
@@ -96,6 +97,6 @@ class ThreadPool(object):
         results = defaultdict(list)
         for worker in self.workers:
             worker.join()
-            for k, v in worker.results.iteritems():
+            for k, v in six.iteritems(worker.results):
                 results[k].extend(v)
         return results

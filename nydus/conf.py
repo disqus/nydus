@@ -7,12 +7,13 @@ nydus.conf
 """
 
 import warnings
+import six
 
 CONNECTIONS = {}
 
 
 def configure(kwargs):
-    for k, v in kwargs.iteritems():
+    for k, v in six.iteritems(kwargs):
         if k.upper() != k:
             warnings.warn('Invalid setting, \'%s\' which is not defined by Nydus' % k)
         elif k not in globals():

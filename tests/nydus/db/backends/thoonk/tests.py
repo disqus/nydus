@@ -8,6 +8,7 @@ except ImportError:
 from nydus.db.backends.thoonk import Thoonk
 from nydus.db import create_cluster
 
+import six
 from six.moves import range
 
 
@@ -75,7 +76,7 @@ class ThoonkTest(unittest.TestCase):
 
         # make sure that we are reusing the job items
         self.assertEqual(len(jobs), 5)
-        for k, v in jobs.iteritems():
+        for k, v in six.iteritems(jobs):
             self.assertEqual(len(v), size / 5)
 
         # make sure we fishi

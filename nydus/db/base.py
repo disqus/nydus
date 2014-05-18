@@ -13,6 +13,7 @@ from nydus.db.map import DistributedContextManager
 from nydus.db.routers import BaseRouter, routing_params
 from nydus.utils import apply_defaults
 
+import six
 from six.moves import range
 
 
@@ -20,7 +21,7 @@ def iter_hosts(hosts):
     # this can either be a dictionary (with the key acting as the numeric
     # index) or it can be a sorted list.
     if isinstance(hosts, collections.Mapping):
-        return hosts.iteritems()
+        return six.iteritems(hosts)
     return enumerate(hosts)
 
 
@@ -157,7 +158,7 @@ class LazyConnectionHandler(dict):
     def reload(self):
         from nydus.db import create_cluster
 
-        for conn_alias, conn_settings in self.conf_callback().iteritems():
+        for conn_alias, conn_settings in six.iteritems(self.conf_callback()):
             self[conn_alias] = create_cluster(conn_settings)
         self._is_ready = True
 
