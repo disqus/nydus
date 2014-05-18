@@ -1,8 +1,8 @@
 from collections import defaultdict
-from Queue import Queue, Empty
 from threading import Thread
 
 from six.moves import range
+from six.moves.queue import Queue, Empty
 
 
 # import_string comes form Werkzeug
