@@ -62,7 +62,7 @@ class BaseCluster(object):
         return CallProxy(self, name)
 
     def __iter__(self):
-        for name in self.hosts.iterkeys():
+        for name in six.iterkeys(self.hosts):
             yield name
 
     def install_router(self, router):
