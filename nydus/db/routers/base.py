@@ -13,6 +13,7 @@ import time
 from functools import wraps
 from itertools import cycle
 
+import six
 from six.moves import range
 
 
@@ -224,7 +225,7 @@ class RoundRobinRouter(BaseRouter):
         now = time.time()
 
         for i in range(len(self.cluster)):
-            db_num = self._hosts_cycler.next()
+            db_num = six.next(self._hosts_cycler)
 
             marked_down_at = self._down_connections.get(db_num, False)
 
