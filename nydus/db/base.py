@@ -97,7 +97,7 @@ class BaseCluster(object):
 
     def disconnect(self):
         """Disconnects all connections in cluster"""
-        for connection in self.hosts.itervalues():
+        for connection in six.itervalues(self.hosts):
             connection.disconnect()
 
     def get_conn(self, *args, **kwargs):
@@ -164,5 +164,5 @@ class LazyConnectionHandler(dict):
 
     def disconnect(self):
         """Disconnects all connections in cluster"""
-        for connection in self.itervalues():
+        for connection in six.itervalues(self):
             connection.disconnect()

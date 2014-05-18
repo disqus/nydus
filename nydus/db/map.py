@@ -60,7 +60,7 @@ class BaseDistributedConnection(object):
     def resolve(self):
         pending_commands = self._build_pending_commands()
 
-        num_commands = sum(len(v) for v in pending_commands.itervalues())
+        num_commands = sum(len(v) for v in six.itervalues(pending_commands))
         # Don't bother with the pooling if we only need to do one operation on a single machine
         if num_commands == 1:
             db_num, (command,) = pending_commands.items()[0]
