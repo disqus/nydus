@@ -187,8 +187,8 @@ class ClusterTest(BaseTest):
                 1: {'resp': 'bar'},
             },
         )
-        self.assertEquals(map(lambda x: x.num, p.get_conn()), [0, 1])
-        self.assertEquals(map(lambda x: x.num, p.get_conn('foo')), [0, 1])
+        self.assertEquals(list(map(lambda x: x.num, p.get_conn())), [0, 1])
+        self.assertEquals(list(map(lambda x: x.num, p.get_conn('foo'))), [0, 1])
 
 
 class MapTest(BaseTest):

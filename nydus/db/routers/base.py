@@ -73,7 +73,7 @@ class BaseRouter(object):
             args, kwargs = retval
 
         if not (args or kwargs):
-            return self.cluster.hosts.keys()
+            return list(self.cluster.hosts.keys())
 
         try:
             db_nums = self._route(attr=attr, args=args, kwargs=kwargs, **fkwargs)
@@ -115,7 +115,7 @@ class BaseRouter(object):
         """
         Perform routing and return db_nums
         """
-        return self.cluster.hosts.keys()
+        return list(self.cluster.hosts.keys())
 
     @routing_params
     def _post_routing(self, attr, db_nums, args, kwargs, **fkwargs):

@@ -73,7 +73,7 @@ class BaseRouterTest(BaseTest):
         self.assertIsNone(setupdefaults)
 
     def test_returns_whole_cluster_without_key(self):
-        self.assertEquals(self.hosts.keys(), self.get_dbs(attr='test'))
+        self.assertEquals(list(self.hosts.keys()), self.get_dbs(attr='test'))
 
     def test_get_dbs_handles_exception(self):
         with mock.patch.object(self.router, '_route') as _route:
@@ -93,10 +93,10 @@ class BaseBaseRouterTest(BaseRouterTest):
         self.assertEqual((('foo',), {}), self.router._pre_routing(attr='test', args=('foo',)))
 
     def test__route_returns_first_db_num(self):
-        self.assertEqual(self.cluster.hosts.keys()[0], self.router._route(attr='test', args=('foo',))[0])
+        self.assertEqual(list(self.cluster.hosts.keys())[0], self.router._route(attr='test', args=('foo',))[0])
 
     def test__post_routing_returns_db_nums(self):
-        db_nums = self.hosts.keys()
+        db_nums = list(self.hosts.keys())
 
         self.assertEqual(db_nums, self.router._post_routing(attr='test', db_nums=db_nums, args=('foo',)))
 
@@ -198,7 +198,7 @@ class RoundRobinRouterTest(BaseRoundRobinRouterTest):
         self.assertIsInstance(self.router._hosts_cycler, Iterable)
 
     def test__route_cycles_through_keys(self):
-        db_nums = self.hosts.keys() * 2
+        db_nums = list(self.hosts.keys()) * 2
         results = [self.router._route(attr='test', args=('foo',))[0] for _ in db_nums]
 
         self.assertEqual(results, db_nums)
@@ -225,7 +225,7 @@ class RoundRobinRouterTest(BaseRoundRobinRouterTest):
         self.assertEqual(db_nums, [db_num + 1])
 
     def test__route_hostlistexhausted(self):
-        [self.router.mark_connection_down(db_num) for db_num in self.hosts.keys()]
+        [self.router.mark_connection_down(db_num) for db_num in list(self.hosts.keys())]
 
         with self.assertRaises(RoundRobinRouter.HostListExhausted):
             self.router._route(attr='test', args=('foo',))
