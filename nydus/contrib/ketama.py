@@ -17,6 +17,7 @@ import hashlib
 import math
 from bisect import bisect
 
+import six
 from six.moves import range
 
 
@@ -94,7 +95,7 @@ class Ketama(object):
                 | b_key[fn(0)])
 
     def _md5_digest(self, key):
-        return list(map(ord, hashlib.md5(key.encode('utf-8')).digest()))
+        return list(six.iterbytes(hashlib.md5(key.encode('utf-8')).digest()))
 
     def remove_node(self, node):
         """
