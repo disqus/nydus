@@ -4,6 +4,8 @@
     Rewrited from the original source: http://www.audioscrobbler.net/development/ketama/
 
 """
+from __future__ import print_function
+
 __author__ = "Andrey Nikishaev"
 __email__ = "creotiv@gmail.com"
 __version__ = 0.1
@@ -134,14 +136,14 @@ if __name__ == '__main__':
             tower = k.get_node('a' + str(i))
             data.setdefault(tower, 0)
             data[tower] += 1
-        print 'Number of caches on each node: '
-        print data
-        print ''
+        print('Number of caches on each node: ')
+        print(data)
+        print('')
 
-        print k.get_node('Aplple')
-        print k.get_node('Hello')
-        print k.get_node('Data')
-        print k.get_node('Computer')
+        print(k.get_node('Aplple'))
+        print(k.get_node('Hello'))
+        print(k.get_node('Data'))
+        print(k.get_node('Computer'))
 
     NODES = [
         '192.168.0.1:6000', '192.168.0.1:6001', '192.168.0.1:6002',
