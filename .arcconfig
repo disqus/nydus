@@ -9,7 +9,7 @@
   "lint_engine": "ComprehensiveLintEngine",
   "lint.pep8.options": "--ignore=W391,W292,W293,E501,E225",
   "lint.jshint.prefix": "node_modules/jshint/bin",
-  "lint.jshint.bin": "hint",
+  "lint.jshint.bin": "jshint",
   "phutil_libraries": {
       "disqus": "/usr/local/include/php/libdisqus/src"
   }

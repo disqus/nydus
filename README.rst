@@ -8,7 +8,7 @@ The following example creates a Redis connection cluster which will distribute r
 .. code:: python
 
     from nydus.db import create_cluster
-    
+
     redis = create_cluster({
         'backend': 'nydus.db.backends.redis.Redis',
         'router': 'nydus.db.routers.keyvalue.PartitionRouter',
@@ -94,7 +94,7 @@ You can configure the Redis client for a connection by specifying it's full path
         'hosts': {
             0: {'db': 0},
         },
-    )}
+    })
 
 The available host options are:
 
@@ -130,7 +130,7 @@ hash on the key:
         'hosts': {
             0: {'db': 0},
         },
-    )}
+    })
 
 Consistent Hashing Router
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -145,7 +145,7 @@ An improvement upon hashing, Nydus provides a Ketama-based consistent hashing ro
         'hosts': {
             0: {'db': 0},
         },
-    )}
+    })
 
 Round Robin Router
 ~~~~~~~~~~~~~~~~~~
@@ -160,7 +160,7 @@ An additional option for distributing queries is the round robin router:
         'hosts': {
             0: {'db': 0},
         },
-    )}
+    })
 
 Pycassa
 -------

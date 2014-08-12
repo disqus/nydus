@@ -37,17 +37,20 @@ class Redis(BaseConnection):
     supports_pipelines = True
 
     def __init__(self, num, host='localhost', port=6379, db=0, timeout=None,
-                 password=None, unix_socket_path=None):
+                 password=None, unix_socket_path=None, identifier=None):
         self.host = host
         self.port = port
         self.db = db
         self.unix_socket_path = unix_socket_path
         self.timeout = timeout
+        self.__identifier = identifier
         self.__password = password
         super(Redis, self).__init__(num)
 
     @property
     def identifier(self):
+        if self.__identifier is not None:
+            return self.__identifier
         mapping = vars(self)
         mapping['klass'] = self.__class__.__name__
         return "redis://%(host)s:%(port)s/%(db)s" % mapping

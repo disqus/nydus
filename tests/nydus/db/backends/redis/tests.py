@@ -152,3 +152,17 @@ class RedisTest(BaseTest):
 
         # This shouldn't raise a HostListExhausted exception
         redis.get('a')
+
+    def test_custom_identifier_specified(self):
+        cluster_config = {
+            'backend': 'nydus.db.backends.redis.Redis',
+            'hosts': {
+                0: {'db': 0, 'identifier': 'redis://127.0.0.1:6379/0'},
+                1: {'db': 1, 'identifier': 'redis://127.0.0.1:6380/1'},
+            },
+        }
+
+        redis = create_cluster(cluster_config)
+        for idx in cluster_config['hosts'].keys():
+            self.assertEquals(redis.hosts[idx].identifier,
+                              cluster_config['hosts'][idx]['identifier'])
