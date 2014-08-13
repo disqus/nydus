@@ -13,8 +13,8 @@ env:
   - DJANGO=1.5.7
   - DJANGO=1.6.4
 install:
-  - pip install -q Django==$DJANGO
-  - pip install -q flake8
-  - pip install -q -e .
+  - pip install Django==$DJANGO
+  - pip install flake8
+  - pip install -e .
 script:
   - make test
