@@ -35,9 +35,9 @@ install_requires = [
 setup(
     name='nydus',
     version='0.10.7',
-    author='David Cramer',
-    author_email='dcramer@gmail.com',
-    url='http://github.com/disqus/nydus',
+    author='DISQUS',
+    author_email='opensource@disqus.com',
+    url='https://github.com/disqus/nydus',
     description='Connection utilities',
     packages=find_packages(exclude=('tests',)),
     zip_safe=False,
