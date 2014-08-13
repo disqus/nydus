@@ -34,7 +34,7 @@ install_requires = [
 
 setup(
     name='nydus',
-    version='0.10.7',
+    version='0.10.8',
     author='DISQUS',
     author_email='opensource@disqus.com',
     url='https://github.com/disqus/nydus',
