@@ -37,7 +37,7 @@ class BaseRouter(object):
     from the calling function will receive default values for those, and need not
     worry about handling missing arguments.
     """
-    retryable = False
+    retryable = True
 
     class UnableToSetupRouter(Exception):
         pass
