@@ -44,6 +44,7 @@ class Redis(BaseConnection):
         self.db = db
         self.unix_socket_path = unix_socket_path
         self.timeout = timeout
+        self.strict = strict
         self.__identifier = identifier
         self.__password = password
         super(Redis, self).__init__(num)
@@ -57,7 +58,7 @@ class Redis(BaseConnection):
         return "redis://%(host)s:%(port)s/%(db)s" % mapping
 
     def connect(self):
-        if strict:
+        if self.strict:
             cls = StrictRedis
         else:
             cls = RedisClient
