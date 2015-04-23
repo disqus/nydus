@@ -38,7 +38,7 @@ class Redis(BaseConnection):
 
     def __init__(self, num, host='localhost', port=6379, db=0, timeout=None,
                  password=None, unix_socket_path=None, identifier=None,
-                 strict=False):
+                 strict=True):
         self.host = host
         self.port = port
         self.db = db

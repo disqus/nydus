@@ -1,0 +1,4 @@
+0.11.0
+------
+
+-The StrictRedis client is now used by default.

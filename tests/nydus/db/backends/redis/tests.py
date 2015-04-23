@@ -67,7 +67,7 @@ class RedisTest(BaseTest):
     def test_provides_identifier(self):
         self.assertEquals(self.redis.identifier, str(self.redis.identifier))
 
-    @mock.patch('nydus.db.backends.redis.RedisClient')
+    @mock.patch('nydus.db.backends.redis.StrictRedis')
     def test_client_instantiates_with_kwargs(self, RedisClient):
         client = Redis(num=0)
         client.connect()
@@ -76,7 +76,7 @@ class RedisTest(BaseTest):
         RedisClient.assert_any_call(host='localhost', port=6379, db=0, socket_timeout=None,
             password=None, unix_socket_path=None)
 
-    @mock.patch('nydus.db.backends.redis.RedisClient')
+    @mock.patch('nydus.db.backends.redis.StrictRedis')
     def test_map_does_pipeline(self, RedisClient):
         redis = create_cluster({
             'backend': 'nydus.db.backends.redis.Redis',
@@ -104,7 +104,7 @@ class RedisTest(BaseTest):
         self.assertEquals(RedisClient().pipeline().execute.call_count, 2)
         RedisClient().pipeline().execute.assert_called_with()
 
-    @mock.patch('nydus.db.backends.redis.RedisClient')
+    @mock.patch('nydus.db.backends.redis.StrictRedis')
     def test_map_only_runs_on_required_nodes(self, RedisClient):
         redis = create_cluster({
             'engine': 'nydus.db.backends.redis.Redis',
