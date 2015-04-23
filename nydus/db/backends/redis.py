@@ -9,7 +9,7 @@ nydus.db.backends.redis
 from __future__ import absolute_import
 
 from itertools import izip
-from redis import Redis as RedisClient
+from redis import Redis as RedisClient, StrictRedis
 from redis import ConnectionError, InvalidResponse
 
 from nydus.db.backends import BaseConnection, BasePipeline
@@ -37,7 +37,8 @@ class Redis(BaseConnection):
     supports_pipelines = True
 
     def __init__(self, num, host='localhost', port=6379, db=0, timeout=None,
-                 password=None, unix_socket_path=None, identifier=None):
+                 password=None, unix_socket_path=None, identifier=None,
+                 strict=False):
         self.host = host
         self.port = port
         self.db = db
@@ -56,7 +57,11 @@ class Redis(BaseConnection):
         return "redis://%(host)s:%(port)s/%(db)s" % mapping
 
     def connect(self):
-        return RedisClient(
+        if strict:
+            cls = StrictRedis
+        else:
+            cls = RedisClient
+        return cls(
             host=self.host, port=self.port, db=self.db,
             socket_timeout=self.timeout, password=self.__password,
             unix_socket_path=self.unix_socket_path)
