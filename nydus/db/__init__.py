@@ -14,15 +14,16 @@ Disqus generic connections wrappers.
 :copyright: (c) 2011-2012 DISQUS.
 :license: Apache License 2.0, see LICENSE for more details.
 """
-
-__all__ = ('create_cluster', 'connections', 'Cluster')
-
 import copy
 
 from nydus import conf
+from nydus.compat import string_types
 from nydus.db.base import LazyConnectionHandler
 from nydus.db.routers.base import BaseRouter
-from nydus.utils import import_string, apply_defaults
+from nydus.utils import import_string
+
+
+__all__ = ('create_cluster', 'connections', 'Cluster')
 
 
 def create_cluster(settings):
@@ -49,7 +50,7 @@ def create_cluster(settings):
     # Pull in our client
     settings = copy.deepcopy(settings)
     backend = settings.pop('engine', settings.pop('backend', None))
-    if isinstance(backend, basestring):
+    if isinstance(backend, string_types):
         Conn = import_string(backend)
     elif backend:
         Conn = backend
@@ -60,7 +61,7 @@ def create_cluster(settings):
     cluster = settings.pop('cluster', None)
     if not cluster:
         Cluster = Conn.get_cluster()
-    elif isinstance(cluster, basestring):
+    elif isinstance(cluster, string_types):
         Cluster = import_string(cluster)
     else:
         Cluster = cluster
@@ -69,7 +70,7 @@ def create_cluster(settings):
     router = settings.pop('router', None)
     if not router:
         Router = BaseRouter
-    elif isinstance(router, basestring):
+    elif isinstance(router, string_types):
         Router = import_string(router)
     else:
         Router = router

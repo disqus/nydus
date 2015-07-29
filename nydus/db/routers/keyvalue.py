@@ -10,6 +10,7 @@ from binascii import crc32
 
 from nydus.contrib.ketama import Ketama
 from nydus.db.routers import BaseRouter, RoundRobinRouter, routing_params
+from nydus import compat
 
 __all__ = ('ConsistentHashingRouter', 'PartitionRouter')
 
@@ -87,4 +88,4 @@ class PartitionRouter(BaseRouter):
         """
         key = get_key(args, kwargs)
 
-        return [crc32(str(key)) % len(self.cluster)]
+        return [crc32(str(key) if compat.PY2 else key.encode('utf-8')) % len(self.cluster)]

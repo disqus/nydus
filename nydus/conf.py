@@ -8,11 +8,13 @@ nydus.conf
 
 import warnings
 
+from nydus.compat import iteritems
+
 CONNECTIONS = {}
 
 
 def configure(kwargs):
-    for k, v in kwargs.iteritems():
+    for k, v in iteritems(kwargs):
         if k.upper() != k:
             warnings.warn('Invalid setting, \'%s\' which is not defined by Nydus' % k)
         elif k not in globals():

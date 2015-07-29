@@ -1,6 +1,8 @@
 from collections import defaultdict
-from Queue import Queue, Empty
+
 from threading import Thread
+
+from nydus.compat import Queue, Empty, iteritems
 
 
 # import_string comes form Werkzeug
@@ -31,7 +33,7 @@ def import_string(import_name, silent=False):
 
 
 def apply_defaults(host, defaults):
-    for key, value in defaults.iteritems():
+    for key, value in iteritems(defaults):
         if key not in host:
             host[key] = value
     return host
@@ -94,6 +96,6 @@ class ThreadPool(object):
         results = defaultdict(list)
         for worker in self.workers:
             worker.join()
-            for k, v in worker.results.iteritems():
+            for k, v in iteritems(worker.results):
                 results[k].extend(v)
         return results
