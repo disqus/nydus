@@ -11,7 +11,7 @@ import collections
 from nydus.db.map import DistributedContextManager
 from nydus.db.routers import BaseRouter, routing_params
 from nydus.utils import apply_defaults
-from nydus.compat import iteritems
+from nydus.compat import iteritems, iterkeys
 
 
 __all__ = ('LazyConnectionHandler', 'BaseCluster')
@@ -62,7 +62,7 @@ class BaseCluster(object):
         return CallProxy(self, name)
 
     def __iter__(self):
-        for name in self.hosts.iterkeys():
+        for name in iterkeys(self.hosts):
             yield name
 
     def install_router(self, router):

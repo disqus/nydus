@@ -27,6 +27,18 @@ except ImportError:
 if PY3:
     def iteritems(d, **kw):
         return iter(d.items(**kw))
+
+    def itervalues(d, **kw):
+        return iter(d.values(**kw))
+
+    def iterkeys(d, **kw):
+        return iter(d.keys(**kw))
 else:
     def iteritems(d, **kw):
         return iter(d.iteritems(**kw))
+
+    def iterkeys(d, **kw):
+        return iter(d.iterkeys(**kw))
+
+    def itervalues(d, **kw):
+        return iter(d.itervalues(**kw))
