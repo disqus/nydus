@@ -7,6 +7,8 @@ nydus.db.promise
 """
 
 from nydus.db.exceptions import CommandError
+from nydus.compat import python_2_unicode_compatible, PY2
+
 from functools import wraps
 
 
@@ -35,6 +37,7 @@ def change_resolution(command, value):
     command._EventualCommand__resolved = True
 
 
+@python_2_unicode_compatible
 class EventualCommand(object):
     # introspection support:
     __members__ = property(lambda self: self.__dir__())
@@ -68,11 +71,6 @@ class EventualCommand(object):
         if self.__resolved:
             return str(self.__wrapped)
         return repr(self)
-
-    def __unicode__(self):
-        if self.__resolved:
-            return unicode(self.__wrapped)
-        return unicode(repr(self))
 
     def __getattr__(self, name):
         return getattr(self.__wrapped, name)
@@ -127,7 +125,11 @@ class EventualCommand(object):
     __ne__ = lambda x, o: x.__wrapped != o
     __gt__ = lambda x, o: x.__wrapped > o
     __ge__ = lambda x, o: x.__wrapped >= o
-    __cmp__ = lambda x, o: cmp(x.__wrapped, o)
+
+    if PY2:
+        __cmp__ = lambda x, o: cmp(x.__wrapped, o)
+        __long__ = lambda x: long(x.__wrapped)
+
     # attributes are currently not callable
     # __call__ = lambda x, *a, **kw: x.__wrapped(*a, **kw)
     __nonzero__ = lambda x: bool(x.__wrapped)
@@ -156,7 +158,7 @@ class EventualCommand(object):
     __invert__ = lambda x: ~(x.__wrapped)
     __complex__ = lambda x: complex(x.__wrapped)
     __int__ = lambda x: int(x.__wrapped)
-    __long__ = lambda x: long(x.__wrapped)
+
     __float__ = lambda x: float(x.__wrapped)
     __oct__ = lambda x: oct(x.__wrapped)
     __hex__ = lambda x: hex(x.__wrapped)

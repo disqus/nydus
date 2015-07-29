@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from threading import Thread
 
-from nydus.compat import Queue, Empty, iteritems
+from nydus.compat import Queue, Empty, iteritems, xrange
 
 
 # import_string comes form Werkzeug

@@ -11,7 +11,7 @@ import collections
 from nydus.db.map import DistributedContextManager
 from nydus.db.routers import BaseRouter, routing_params
 from nydus.utils import apply_defaults
-from nydus.compat import iteritems, iterkeys
+from nydus.compat import iteritems, iterkeys, xrange
 
 
 __all__ = ('LazyConnectionHandler', 'BaseCluster')

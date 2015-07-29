@@ -5,13 +5,15 @@ nydus.db.base
 :copyright: (c) 2011-2012 DISQUS.
 :license: Apache License 2.0, see LICENSE for more details.
 """
-
-__all__ = ('BaseRouter', 'RoundRobinRouter', 'routing_params')
-
 import time
 
 from functools import wraps
 from itertools import cycle
+
+from nydus.compat import xrange
+
+
+__all__ = ('BaseRouter', 'RoundRobinRouter', 'routing_params')
 
 
 def routing_params(func):

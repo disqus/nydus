@@ -10,6 +10,8 @@ import hashlib
 import math
 from bisect import bisect
 
+from nydus.compat import xrange
+
 
 __author__ = "Andrey Nikishaev"
 __email__ = "creotiv@gmail.com"
