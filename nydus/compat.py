@@ -45,7 +45,7 @@ else:
 
 
 try:
-    xrange
+    xrange = xrange
 except NameError:
     xrange = range
 
