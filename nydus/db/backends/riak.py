@@ -9,11 +9,11 @@ nydus.db.backends.riak
 from __future__ import absolute_import
 
 import socket
-import httplib
 
 from riak import RiakClient, RiakError
 
 from nydus.db.backends import BaseConnection
+from nydus.compat import httplib
 
 
 class Riak(BaseConnection):

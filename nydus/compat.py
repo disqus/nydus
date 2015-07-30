@@ -17,6 +17,20 @@ else:
 
 
 try:
+    import httplib
+except ImportError:
+    from http import client as httplib  # noqa
+
+
+try:
+    advance_iterator = next
+except NameError:
+    def advance_iterator(it):
+        return it.next()
+next = advance_iterator
+
+
+try:
     # Python 2
     from itertools import izip
 except ImportError:

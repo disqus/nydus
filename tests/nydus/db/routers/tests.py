@@ -11,6 +11,7 @@ from nydus.db.backends import BaseConnection
 from nydus.db.routers import BaseRouter, RoundRobinRouter
 from nydus.db.routers.keyvalue import ConsistentHashingRouter
 from nydus.testutils import BaseTest
+from nydus.compat import xrange
 
 
 def _get_func(func):
@@ -71,7 +72,7 @@ class BaseRouterTest(BaseTest):
         self.assertIsNone(setupdefaults)
 
     def test_returns_whole_cluster_without_key(self):
-        self.assertEquals(self.hosts.keys(), self.get_dbs(attr='test'))
+        self.assertEqual(self.hosts.keys(), self.get_dbs(attr='test'))
 
     def test_get_dbs_handles_exception(self):
         with mock.patch.object(self.router, '_route') as _route:
@@ -91,7 +92,7 @@ class BaseBaseRouterTest(BaseRouterTest):
         self.assertEqual((('foo',), {}), self.router._pre_routing(attr='test', args=('foo',)))
 
     def test__route_returns_first_db_num(self):
-        self.assertEqual(self.cluster.hosts.keys()[0], self.router._route(attr='test', args=('foo',))[0])
+        self.assertEqual(list(self.cluster.hosts.keys())[0], list(self.router._route(attr='test', args=('foo',)))[0])
 
     def test__post_routing_returns_db_nums(self):
         db_nums = self.hosts.keys()
@@ -196,7 +197,7 @@ class RoundRobinRouterTest(BaseRoundRobinRouterTest):
         self.assertIsInstance(self.router._hosts_cycler, Iterable)
 
     def test__route_cycles_through_keys(self):
-        db_nums = self.hosts.keys() * 2
+        db_nums = list(self.hosts.keys()) * 2
         results = [self.router._route(attr='test', args=('foo',))[0] for _ in db_nums]
 
         self.assertEqual(results, db_nums)
@@ -237,14 +238,14 @@ class ConsistentHashingRouterTest(BaseRoundRobinRouterTest):
         return super(ConsistentHashingRouterTest, self).get_dbs(*args, **kwargs)
 
     def test_retry_gives_next_host_if_primary_is_offline(self):
-        self.assertEquals([2], self.get_dbs(args=('foo',)))
-        self.assertEquals([4], self.get_dbs(args=('foo',), retry_for=2))
+        self.assertEqual([2], self.get_dbs(args=('foo',)))
+        self.assertEqual([4], self.get_dbs(args=('foo',), retry_for=2))
 
     def test_retry_host_change_is_sticky(self):
-        self.assertEquals([2], self.get_dbs(args=('foo',)))
-        self.assertEquals([4], self.get_dbs(args=('foo',), retry_for=2))
+        self.assertEqual([2], self.get_dbs(args=('foo',)))
+        self.assertEqual([4], self.get_dbs(args=('foo',), retry_for=2))
 
-        self.assertEquals([4], self.get_dbs(args=('foo',)))
+        self.assertEqual([4], self.get_dbs(args=('foo',)))
 
     def test_raises_host_list_exhaused_if_no_host_can_be_found(self):
         # Kill the first 4

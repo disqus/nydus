@@ -10,7 +10,7 @@ import time
 from functools import wraps
 from itertools import cycle
 
-from nydus.compat import xrange
+from nydus.compat import xrange, next
 
 
 __all__ = ('BaseRouter', 'RoundRobinRouter', 'routing_params')
@@ -224,7 +224,7 @@ class RoundRobinRouter(BaseRouter):
         now = time.time()
 
         for i in xrange(len(self.cluster)):
-            db_num = self._hosts_cycler.next()
+            db_num = next(self._hosts_cycler)
 
             marked_down_at = self._down_connections.get(db_num, False)
 

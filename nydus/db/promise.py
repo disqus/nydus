@@ -133,7 +133,10 @@ class EventualCommand(object):
     # attributes are currently not callable
     # __call__ = lambda x, *a, **kw: x.__wrapped(*a, **kw)
     __nonzero__ = lambda x: bool(x.__wrapped)
-    __len__ = lambda x: len(x.__wrapped)
+
+    def __len__(self):
+        return len(self.__wrapped)
+
     __getitem__ = lambda x, i: x.__wrapped[i]
     __iter__ = lambda x: iter(x.__wrapped)
     __contains__ = lambda x, i: i in x.__wrapped

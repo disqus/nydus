@@ -4,7 +4,7 @@
     Rewrited from the original source: http://www.audioscrobbler.net/development/ketama/
 
 """
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 import hashlib
 import math
@@ -95,7 +95,7 @@ class Ketama(object):
                 b_key[fn(0)])
 
     def _md5_digest(self, key):
-        return map(ord, hashlib.md5(key).digest())
+        return list(map(ord, '%s' % hashlib.md5(key.encode('utf-8')).digest()))
 
     def remove_node(self, node):
         """

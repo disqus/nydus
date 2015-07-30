@@ -63,7 +63,7 @@ class BaseDistributedConnection(object):
         num_commands = sum(len(v) for v in itervalues(pending_commands))
         # Don't bother with the pooling if we only need to do one operation on a single machine
         if num_commands == 1:
-            db_num, (command,) = pending_commands.items()[0]
+            db_num, (command,) = list(pending_commands.items())[0]
             self._commands = [command.resolve(self._cluster[db_num])]
 
         elif num_commands > 1:

@@ -2,7 +2,7 @@ from collections import defaultdict
 
 from threading import Thread
 
-from nydus.compat import Queue, Empty, iteritems, xrange
+from nydus.compat import Queue, Empty, iteritems, xrange, next
 
 
 # import_string comes form Werkzeug
@@ -41,7 +41,7 @@ def apply_defaults(host, defaults):
 
 def peek(value):
     generator = iter(value)
-    prev = generator.next()
+    prev = next(generator)
     for item in generator:
         yield prev, item
         prev = item

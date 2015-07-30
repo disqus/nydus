@@ -11,7 +11,7 @@ import collections
 from nydus.db.map import DistributedContextManager
 from nydus.db.routers import BaseRouter, routing_params
 from nydus.utils import apply_defaults
-from nydus.compat import iteritems, iterkeys, xrange
+from nydus.compat import iteritems, iterkeys, xrange, itervalues
 
 
 __all__ = ('LazyConnectionHandler', 'BaseCluster')
@@ -97,7 +97,7 @@ class BaseCluster(object):
 
     def disconnect(self):
         """Disconnects all connections in cluster"""
-        for connection in self.hosts.itervalues():
+        for connection in itervalues(self.hosts):
             connection.disconnect()
 
     def get_conn(self, *args, **kwargs):
