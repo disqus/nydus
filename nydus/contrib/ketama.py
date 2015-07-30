@@ -10,7 +10,7 @@ import hashlib
 import math
 from bisect import bisect
 
-from nydus.compat import xrange
+from nydus.compat import xrange, PY3
 
 
 __author__ = "Andrey Nikishaev"
@@ -95,7 +95,18 @@ class Ketama(object):
                 b_key[fn(0)])
 
     def _md5_digest(self, key):
-        return list(map(ord, '%s' % hashlib.md5(key.encode('utf-8')).digest()))
+        if PY3:
+            key = key.encode('utf-8')
+
+        m = hashlib.md5()
+        m.update(key)
+
+        digest = m.digest()
+
+        if PY3:
+            digest = digest.decode('latin-1')
+
+        return list(map(ord, digest))
 
     def remove_node(self, node):
         """

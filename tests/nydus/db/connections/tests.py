@@ -11,6 +11,7 @@ from nydus.db.routers.keyvalue import get_key
 from nydus.db.promise import EventualCommand
 from nydus.testutils import BaseTest, fixture
 from nydus.utils import apply_defaults
+from nydus.compat import PY2
 
 
 class DummyConnection(BaseConnection):
@@ -325,14 +326,20 @@ class EventualCommandTest(BaseTest):
         ec = EventualCommand('foo')
         ec('bar', baz='foo')
 
-        self.assertEqual(repr(ec), u"<EventualCommand: foo args=('bar',) kwargs={'baz': 'foo'}>")
+        if PY2:
+            self.assertEqual(repr(ec), "<EventualCommand: foo args=(u'bar',) kwargs={'baz': u'foo'}>")
+        else:
+            self.assertEqual(repr(ec), "<EventualCommand: foo args=('bar',) kwargs={'baz': 'foo'}>")
 
     def test_evaled_repr(self):
         ec = EventualCommand('foo')
         ec('bar', baz='foo')
         ec.resolve_as('biz')
 
-        self.assertEqual(repr(ec), u"'biz'")
+        if PY2:
+            self.assertEqual(repr(ec), "u'biz'")
+        else:
+            self.assertEqual(repr(ec), "'biz'")
 
     def test_coersion(self):
         ec = EventualCommand('foo')()

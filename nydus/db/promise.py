@@ -5,6 +5,7 @@ nydus.db.promise
 :copyright: (c) 2011 DISQUS.
 :license: Apache License 2.0, see LICENSE for more details.
 """
+from __future__ import unicode_literals
 
 from nydus.db.exceptions import CommandError
 from nydus.compat import python_2_unicode_compatible, PY2
@@ -65,11 +66,12 @@ class EventualCommand(object):
     def __repr__(self):
         if self.__resolved:
             return repr(self.__wrapped)
-        return u'<EventualCommand: %s args=%s kwargs=%s>' % (self.__attr, self.__args, self.__kwargs)
+        return '<EventualCommand: %s args=%s kwargs=%s>' % (self.__attr, self.__args, self.__kwargs)
 
     def __str__(self):
         if self.__resolved:
-            return str(self.__wrapped)
+            return '%s' % self.__wrapped
+
         return repr(self)
 
     def __getattr__(self, name):
