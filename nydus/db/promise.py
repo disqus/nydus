@@ -137,7 +137,10 @@ class EventualCommand(object):
     __nonzero__ = lambda x: bool(x.__wrapped)
 
     def __len__(self):
-        return len(self.__wrapped)
+        if self.__wrapped is not None:
+            return len(self.__wrapped)
+
+        return 0
 
     __getitem__ = lambda x, i: x.__wrapped[i]
     __iter__ = lambda x: iter(x.__wrapped)
