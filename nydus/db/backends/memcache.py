@@ -10,10 +10,10 @@ from __future__ import absolute_import
 
 import pylibmc
 
-from itertools import izip
 from nydus.db.backends import BaseConnection, BasePipeline
 from nydus.db.promise import EventualCommand
 from nydus.utils import peek
+from nydus.compat import izip
 
 
 class Memcache(BaseConnection):
@@ -22,7 +22,7 @@ class Memcache(BaseConnection):
     supports_pipelines = True
 
     def __init__(self, num, host='localhost', port=11211, binary=True,
-            behaviors=None, **options):
+                 behaviors=None, **options):
         self.host = host
         self.port = port
         self.binary = binary

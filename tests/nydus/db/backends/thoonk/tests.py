@@ -1,8 +1,19 @@
 from __future__ import absolute_import
 
-import unittest2
+from nydus.compat import PY3
+
+try:
+    import unittest2
+except ImportError:
+    import unittest as unittest2
+
+if PY3:
+    import unittest
+    raise unittest.SkipTest("Skip thoonk tests as it's not compatible with py3")
+
 from nydus.db.backends.thoonk import Thoonk
 from nydus.db import create_cluster
+from nydus.compat import xrange
 
 
 class ThoonkTest(unittest2.TestCase):

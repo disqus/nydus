@@ -1,5 +1,12 @@
 from __future__ import absolute_import
 
+import unittest
+
+try:
+    import pycassa  # noqa
+except ImportError:
+    raise unittest.SkipTest("Skip pycassa tests as it's not compatible with py3")
+
 from nydus.db import create_cluster
 from nydus.db.backends.pycassa import Pycassa, PycassaCluster
 from nydus.testutils import BaseTest, fixture
@@ -16,7 +23,7 @@ class PycassCreateClusterTest(BaseTest):
         })
 
     def test_is_pycassa_cluster(self):
-        self.assertEquals(type(self.cluster), PycassaCluster)
+        self.assertEqual(type(self.cluster), PycassaCluster)
 
 
 class PycassClusterTest(BaseTest):
@@ -28,10 +35,10 @@ class PycassClusterTest(BaseTest):
         )
 
     def test_has_one_connection(self):
-        self.assertEquals(len(self.cluster), 1)
+        self.assertEqual(len(self.cluster), 1)
 
     def test_backend_is_pycassa(self):
-        self.assertEquals(type(self.cluster[0]), Pycassa)
+        self.assertEqual(type(self.cluster[0]), Pycassa)
 
 
 class PycassaTest(BaseTest):

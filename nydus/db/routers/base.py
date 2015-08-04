@@ -5,13 +5,15 @@ nydus.db.base
 :copyright: (c) 2011-2012 DISQUS.
 :license: Apache License 2.0, see LICENSE for more details.
 """
-
-__all__ = ('BaseRouter', 'RoundRobinRouter', 'routing_params')
-
 import time
 
 from functools import wraps
 from itertools import cycle
+
+from nydus.compat import xrange, next
+
+
+__all__ = ('BaseRouter', 'RoundRobinRouter', 'routing_params')
 
 
 def routing_params(func):
@@ -222,7 +224,7 @@ class RoundRobinRouter(BaseRouter):
         now = time.time()
 
         for i in xrange(len(self.cluster)):
-            db_num = self._hosts_cycler.next()
+            db_num = next(self._hosts_cycler)
 
             marked_down_at = self._down_connections.get(db_num, False)
 

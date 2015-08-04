@@ -1,4 +1,7 @@
-import unittest2
+try:
+    import unittest2
+except ImportError:
+    import unittest as unittest2  # noqa
 
 NOTSET = object()
 

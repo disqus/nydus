@@ -8,11 +8,11 @@ nydus.db.backends.redis
 
 from __future__ import absolute_import
 
-from itertools import izip
 from redis import Redis as RedisClient, StrictRedis
 from redis import ConnectionError, InvalidResponse
 
 from nydus.db.backends import BaseConnection, BasePipeline
+from nydus.compat import izip
 
 
 class RedisPipeline(BasePipeline):

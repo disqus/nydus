@@ -4,16 +4,21 @@
     Rewrited from the original source: http://www.audioscrobbler.net/development/ketama/
 
 """
+from __future__ import print_function, unicode_literals
+
+import hashlib
+import math
+from bisect import bisect
+
+from nydus.compat import xrange, PY3
+
+
 __author__ = "Andrey Nikishaev"
 __email__ = "creotiv@gmail.com"
 __version__ = 0.1
 __status__ = "productrion"
 
 __all__ = ['Ketama']
-
-import hashlib
-import math
-from bisect import bisect
 
 
 class Ketama(object):
@@ -49,10 +54,10 @@ class Ketama(object):
                 b_key = self._md5_digest('%s-%s-salt' % (node, i))
 
                 for l in xrange(0, 4):
-                    key = ((b_key[3 + l * 4] << 24)
-                           | (b_key[2 + l * 4] << 16)
-                           | (b_key[1 + l * 4] << 8)
-                           | b_key[l * 4])
+                    key = ((b_key[3 + l * 4] << 24) |
+                           (b_key[2 + l * 4] << 16) |
+                           (b_key[1 + l * 4] << 8) |
+                           b_key[l * 4])
 
                     self._hashring[key] = node
                     self._sorted_keys.append(key)
@@ -84,13 +89,24 @@ class Ketama(object):
         return self._hashi(b_key, lambda x: x)
 
     def _hashi(self, b_key, fn):
-        return ((b_key[fn(3)] << 24)
-                | (b_key[fn(2)] << 16)
-                | (b_key[fn(1)] << 8)
-                | b_key[fn(0)])
+        return ((b_key[fn(3)] << 24) |
+                (b_key[fn(2)] << 16) |
+                (b_key[fn(1)] << 8) |
+                b_key[fn(0)])
 
     def _md5_digest(self, key):
-        return map(ord, hashlib.md5(key).digest())
+        if PY3:
+            key = key.encode('utf-8')
+
+        m = hashlib.md5()
+        m.update(key)
+
+        digest = m.digest()
+
+        if PY3:
+            digest = digest.decode('latin-1')
+
+        return list(map(ord, digest))
 
     def remove_node(self, node):
         """
@@ -134,14 +150,14 @@ if __name__ == '__main__':
             tower = k.get_node('a' + str(i))
             data.setdefault(tower, 0)
             data[tower] += 1
-        print 'Number of caches on each node: '
-        print data
-        print ''
+        print('Number of caches on each node: ')
+        print(data)
+        print('')
 
-        print k.get_node('Aplple')
-        print k.get_node('Hello')
-        print k.get_node('Data')
-        print k.get_node('Computer')
+        print(k.get_node('Aplple'))
+        print(k.get_node('Hello'))
+        print(k.get_node('Data'))
+        print(k.get_node('Computer'))
 
     NODES = [
         '192.168.0.1:6000', '192.168.0.1:6001', '192.168.0.1:6002',

@@ -9,11 +9,11 @@ nydus.db.backends.riak
 from __future__ import absolute_import
 
 import socket
-import httplib
 
 from riak import RiakClient, RiakError
 
 from nydus.db.backends import BaseConnection
+from nydus.compat import httplib
 
 
 class Riak(BaseConnection):
@@ -22,7 +22,7 @@ class Riak(BaseConnection):
     supports_pipelines = False
 
     def __init__(self, num, host='127.0.0.1', port=8098, prefix='riak', mapred_prefix='mapred', client_id=None,
-        transport_class=None, solr_transport_class=None, transport_options=None, **options):
+                 transport_class=None, solr_transport_class=None, transport_options=None, **options):
 
         self.host = host
         self.port = port

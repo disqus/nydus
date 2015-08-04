@@ -6,4 +6,4 @@ nydus.db.backends
 :license: Apache License 2.0, see LICENSE for more details.
 """
 
-from .base import BaseConnection, BasePipeline
+from .base import BaseConnection, BasePipeline  # noqa

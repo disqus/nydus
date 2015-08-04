@@ -5,10 +5,10 @@ nydus.db.backends.base
 :copyright: (c) 2011-2012 DISQUS.
 :license: Apache License 2.0, see LICENSE for more details.
 """
+from nydus.db.base import BaseCluster
+
 
 __all__ = ('BaseConnection',)
-
-from nydus.db.base import BaseCluster
 
 
 class BasePipeline(object):

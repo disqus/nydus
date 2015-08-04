@@ -13,16 +13,20 @@ if 'nosetests' in sys.argv:
 else:
     setup_requires = []
 
+PY3 = sys.version_info[0] == 3
+
 tests_require = [
     'mock',
     'nose',
-    'pycassa',
     'pylibmc',
     'redis',
     'riak',
     'thoonk',
     'unittest2',
 ]
+
+if not PY3:
+    tests_require += ['pycassa', ]
 
 dependency_links = [
     'https://github.com/andyet/thoonk.py/tarball/master#egg=thoonk',
