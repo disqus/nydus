@@ -19,6 +19,9 @@ class DummyConnection(BaseConnection):
         self.resp = resp
         super(DummyConnection, self).__init__(num, **kwargs)
 
+    def connect(self):
+        pass
+
     def foo(self, *args, **kwargs):
         return self.resp
 
