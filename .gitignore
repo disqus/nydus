@@ -2,8 +2,9 @@
 *.egg-info
 *.gz
 *.egg
-.tox
 .coverage
+.idea
+.tox
 /dist
 /build
 /cover

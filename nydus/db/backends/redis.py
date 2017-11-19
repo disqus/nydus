@@ -8,17 +8,17 @@ nydus.db.backends.redis
 
 from __future__ import absolute_import
 
-from itertools import izip
 from redis import Redis as RedisClient, StrictRedis
 from redis import ConnectionError, InvalidResponse
+from six.moves import zip
 
 from nydus.db.backends import BaseConnection, BasePipeline
 
 
 class RedisPipeline(BasePipeline):
+
     def __init__(self, connection):
-        self.pending = []
-        self.connection = connection
+        super(RedisPipeline, self).__init__(connection)
         self.pipe = connection.pipeline()
 
     def add(self, command):
@@ -28,7 +28,7 @@ class RedisPipeline(BasePipeline):
         getattr(self.pipe, name)(*args, **kwargs)
 
     def execute(self):
-        return dict(izip(self.pending, self.pipe.execute()))
+        return dict(zip(self.pending, self.pipe.execute()))
 
 
 class Redis(BaseConnection):

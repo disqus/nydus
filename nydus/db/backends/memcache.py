@@ -9,8 +9,8 @@ nydus.db.backends.memcache
 from __future__ import absolute_import
 
 import pylibmc
+from six.moves import zip
 
-from itertools import izip
 from nydus.db.backends import BaseConnection, BasePipeline
 from nydus.db.promise import EventualCommand
 from nydus.utils import peek
@@ -21,8 +21,7 @@ class Memcache(BaseConnection):
     retryable_exceptions = frozenset([pylibmc.Error])
     supports_pipelines = True
 
-    def __init__(self, num, host='localhost', port=11211, binary=True,
-            behaviors=None, **options):
+    def __init__(self, num, host='localhost', port=11211, binary=True, behaviors=None):
         self.host = host
         self.port = port
         self.binary = binary
@@ -197,7 +196,7 @@ def resolve_grouped_commands(grouped, connection):
                 for command in grouped_commands:
                     results[command] = result.get(command.get_args()[0])
             else:
-                for command, value in izip(grouped_commands, result):
+                for command, value in zip(grouped_commands, result):
                     results[command] = value
 
     return results
