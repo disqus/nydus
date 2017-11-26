@@ -5,7 +5,6 @@ nydus.db.backends.memcache
 :copyright: (c) 2012 DISQUS.
 :license: Apache License 2.0, see LICENSE for more details.
 """
-
 from __future__ import absolute_import
 
 import pylibmc

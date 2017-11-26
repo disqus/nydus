@@ -9,16 +9,15 @@ nydus.db.backends.riak
 from __future__ import absolute_import
 
 import socket
-import httplib
-
 from riak import RiakClient, RiakError
+from six.moves import http_client
 
 from nydus.db.backends import BaseConnection
 
 
 class Riak(BaseConnection):
     # Exceptions that can be retried by this backend
-    retryable_exceptions = frozenset([socket.error, httplib.HTTPException, RiakError])
+    retryable_exceptions = frozenset([socket.error, http_client.HTTPException, RiakError])
     supports_pipelines = False
 
     def __init__(self, num, host='127.0.0.1', port=8098, prefix='riak', mapred_prefix='mapred', client_id=None,

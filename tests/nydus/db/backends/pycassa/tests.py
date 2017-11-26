@@ -1,9 +1,8 @@
-from __future__ import absolute_import
+import mock
 
 from nydus.db import create_cluster
 from nydus.db.backends.pycassa import Pycassa, PycassaCluster
 from nydus.testutils import BaseTest, fixture
-import mock
 
 
 class PycassCreateClusterTest(BaseTest):
@@ -16,7 +15,7 @@ class PycassCreateClusterTest(BaseTest):
         })
 
     def test_is_pycassa_cluster(self):
-        self.assertEquals(type(self.cluster), PycassaCluster)
+        self.assertEqual(type(self.cluster), PycassaCluster)
 
 
 class PycassClusterTest(BaseTest):
@@ -28,10 +27,10 @@ class PycassClusterTest(BaseTest):
         )
 
     def test_has_one_connection(self):
-        self.assertEquals(len(self.cluster), 1)
+        self.assertEqual(len(self.cluster), 1)
 
     def test_backend_is_pycassa(self):
-        self.assertEquals(type(self.cluster[0]), Pycassa)
+        self.assertEqual(type(self.cluster[0]), Pycassa)
 
 
 class PycassaTest(BaseTest):

@@ -1,11 +1,11 @@
-from __future__ import absolute_import
+from six.moves import http_client
+from socket import error as SocketError
 
 import mock
-from httplib import HTTPException
+from riak import RiakClient, RiakError
+
 from nydus.db.backends.riak import Riak
 from nydus.testutils import BaseTest
-from riak import RiakClient, RiakError
-from socket import error as SocketError
 
 
 class RiakTest(BaseTest):
@@ -40,11 +40,11 @@ class RiakTest(BaseTest):
 
     def test_identifier(self):
         expected_identifier = 'http://%(host)s:%(port)s/%(prefix)s' % self.conn.__dict__
-        self.assertEquals(expected_identifier, self.conn.identifier)
+        self.assertEqual(expected_identifier, self.conn.identifier)
 
     def test_identifier_properties(self):
         expected_identifier = 'http://%(host)s:%(port)s/%(prefix)s' % self.modified_props
-        self.assertEquals(expected_identifier, self.modified_conn.identifier)
+        self.assertEqual(expected_identifier, self.modified_conn.identifier)
 
     @mock.patch('nydus.db.backends.riak.RiakClient')
     def test_connect_riakclient_options(self, _RiakClient):
@@ -70,4 +70,4 @@ class RiakTest(BaseTest):
         self.assertIsInstance(client, RiakClient)
 
     def test_provides_retryable_exceptions(self):
-        self.assertItemsEqual([RiakError, HTTPException, SocketError], self.conn.retryable_exceptions)
+        self.assertItemsEqual([RiakError, http_client.HTTPException, SocketError], self.conn.retryable_exceptions)

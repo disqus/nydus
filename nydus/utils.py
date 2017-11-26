@@ -42,7 +42,7 @@ def apply_defaults(host, defaults):
 
 def peek(value):
     generator = iter(value)
-    prev = generator.next()
+    prev = six.next(generator)
     for item in generator:
         yield prev, item
         prev = item

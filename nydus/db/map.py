@@ -46,7 +46,7 @@ class BaseDistributedConnection(object):
                     kwargs=kwargs,
                 )
             else:
-                db_nums = self._cluster.keys()
+                db_nums = six.iterkeys(self._cluster)
 
             for db_num in db_nums:
                 # add to pending commands
@@ -63,7 +63,7 @@ class BaseDistributedConnection(object):
         num_commands = sum(len(v) for v in six.itervalues(pending_commands))
         # Don't bother with the pooling if we only need to do one operation on a single machine
         if num_commands == 1:
-            db_num, (command,) = pending_commands.items()[0]
+            db_num, (command,) = six.next(six.iteritems(pending_commands))
             self._commands = [command.resolve(self._cluster[db_num])]
 
         elif num_commands > 1:

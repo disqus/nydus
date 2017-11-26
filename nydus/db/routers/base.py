@@ -182,7 +182,7 @@ class RoundRobinRouter(BaseRouter):
         """
         now = time.time()
 
-        for db_num, marked_down_at in self._down_connections.items():
+        for db_num, marked_down_at in six.iteritems(self._down_connections):
             if marked_down_at + self.retry_timeout <= now:
                 self.mark_connection_up(db_num)
 
@@ -191,7 +191,7 @@ class RoundRobinRouter(BaseRouter):
         Marks all connections which were previously listed as unavailable as being up.
         """
         self._get_db_attempts = 0
-        for db_num in self._down_connections.keys():
+        for db_num in six.iterkeys(self._down_connections):
             self.mark_connection_up(db_num)
 
     def mark_connection_down(self, db_num):
@@ -204,7 +204,7 @@ class RoundRobinRouter(BaseRouter):
 
     @routing_params
     def _setup_router(self, args, kwargs, **fkwargs):
-        self._hosts_cycler = cycle(self.cluster.hosts.keys())
+        self._hosts_cycler = cycle(six.viewkeys(self.cluster.hosts))
 
         return True
 

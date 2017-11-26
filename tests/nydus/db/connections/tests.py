@@ -52,7 +52,7 @@ class ConnectionTest(BaseTest):
     @mock.patch('nydus.db.backends.base.BaseConnection.disconnect', mock.Mock(return_value=None))
     def test_close_unsets_connection(self):
         self.connection.close()
-        self.assertEquals(self.connection._connection, None)
+        self.assertEqual(self.connection._connection, None)
 
     @mock.patch('nydus.db.backends.base.BaseConnection.disconnect')
     def test_close_propagates_noops_if_not_connected(self, disconnect):
@@ -73,14 +73,14 @@ class ConnectionTest(BaseTest):
     @mock.patch('nydus.db.backends.base.BaseConnection.connect')
     def test_connection_returns_result_of_connect(self, connect):
         val = self.connection.connection
-        self.assertEquals(val, connect.return_value)
+        self.assertEqual(val, connect.return_value)
 
     def test_attrs_proxy(self):
         conn = mock.Mock()
         self.connection._connection = conn
         val = self.connection.foo(biz='baz')
         conn.foo.assert_called_once_with(biz='baz')
-        self.assertEquals(val, conn.foo.return_value)
+        self.assertEqual(val, conn.foo.return_value)
 
 
 class CreateConnectionTest(BaseTest):
@@ -104,7 +104,7 @@ class CreateClusterTest(BaseTest):
                 0: {'resp': 'bar'},
             }
         })
-        self.assertEquals(len(c), 1)
+        self.assertEqual(len(c), 1)
 
     @mock.patch('nydus.db.base.create_connection')
     def test_does_create_connection_with_defaults(self, create_connection):
@@ -124,14 +124,14 @@ class ClusterTest(BaseTest):
             backend=BaseConnection,
             hosts={0: {}},
         )
-        self.assertEquals(len(p), 1)
+        self.assertEqual(len(p), 1)
 
     def test_proxy(self):
         p = BaseCluster(
             backend=DummyConnection,
             hosts={0: {'resp': 'bar'}},
         )
-        self.assertEquals(p.foo(), 'bar')
+        self.assertEqual(p.foo(), 'bar')
 
     def test_disconnect(self):
         c = mock.Mock()
@@ -151,8 +151,8 @@ class ClusterTest(BaseTest):
                 1: {'resp': 'bar'},
             },
         )
-        self.assertEquals(p.foo(), 'foo')
-        self.assertEquals(p.foo('foo'), 'bar')
+        self.assertEqual(p.foo(), 'foo')
+        self.assertEqual(p.foo('foo'), 'bar')
 
     def test_default_routing_with_multiple_hosts(self):
         p = BaseCluster(
@@ -162,8 +162,8 @@ class ClusterTest(BaseTest):
                 1: {'resp': 'bar'},
             },
         )
-        self.assertEquals(p.foo(), ['foo', 'bar'])
-        self.assertEquals(p.foo('foo'), ['foo', 'bar'])
+        self.assertEqual(p.foo(), ['foo', 'bar'])
+        self.assertEqual(p.foo('foo'), ['foo', 'bar'])
 
     def test_get_conn_with_split_router(self):
         # test dummy router
@@ -175,8 +175,8 @@ class ClusterTest(BaseTest):
             },
             router=DummyRouter,
         )
-        self.assertEquals(p.get_conn().num, 0)
-        self.assertEquals(p.get_conn('foo').num, 1)
+        self.assertEqual(p.get_conn().num, 0)
+        self.assertEqual(p.get_conn('foo').num, 1)
 
     def test_get_conn_default_routing_with_multiple_hosts(self):
         # test default routing behavior
@@ -187,8 +187,8 @@ class ClusterTest(BaseTest):
                 1: {'resp': 'bar'},
             },
         )
-        self.assertEquals(list(map(lambda x: x.num, p.get_conn())), [0, 1])
-        self.assertEquals(list(map(lambda x: x.num, p.get_conn('foo'))), [0, 1])
+        self.assertEqual(list([x.num for x in p.get_conn()]), [0, 1])
+        self.assertEqual(list([x.num for x in p.get_conn('foo')]), [0, 1])
 
 
 class MapTest(BaseTest):
@@ -208,21 +208,21 @@ class MapTest(BaseTest):
         with self.cluster.map() as conn:
             foo = conn.foo()
             bar = conn.foo('foo')
-            self.assertEquals(foo, None)
-            self.assertEquals(bar, None)
+            self.assertEqual(foo, None)
+            self.assertEqual(bar, None)
 
-        self.assertEquals(bar, 'bar')
-        self.assertEquals(foo, 'foo')
+        self.assertEqual(bar, 'bar')
+        self.assertEqual(foo, 'foo')
 
     def test_handles_groups_of_results(self):
         with self.cluster.map() as conn:
             foo = conn.foo()
             bar = conn.foo('foo')
-            self.assertEquals(foo, None)
-            self.assertEquals(bar, None)
+            self.assertEqual(foo, None)
+            self.assertEqual(bar, None)
 
-        self.assertEquals(foo, ['foo', 'bar'])
-        self.assertEquals(bar, ['foo', 'bar'])
+        self.assertEqual(foo, ['foo', 'bar'])
+        self.assertEqual(bar, ['foo', 'bar'])
 
 
 class MapWithFailuresTest(BaseTest):
@@ -242,21 +242,21 @@ class MapWithFailuresTest(BaseTest):
             with self.cluster.map() as conn:
                 foo = conn.foo()
                 bar = conn.foo('foo')
-                self.assertEquals(foo, None)
-                self.assertEquals(bar, None)
+                self.assertEqual(foo, None)
+                self.assertEqual(bar, None)
 
     def test_fail_silenlty(self):
         with self.cluster.map(fail_silently=True) as conn:
             foo = conn.foo()
             bar = conn.foo('foo')
-            self.assertEquals(foo, None)
-            self.assertEquals(bar, None)
+            self.assertEqual(foo, None)
+            self.assertEqual(bar, None)
 
-        self.assertEquals(len(conn.get_errors()), 1, conn.get_errors())
-        self.assertEquals(type(conn.get_errors()[0][1]), ValueError)
+        self.assertEqual(len(conn.get_errors()), 1, conn.get_errors())
+        self.assertEqual(type(conn.get_errors()[0][1]), ValueError)
 
-        self.assertEquals(foo, 'foo')
-        self.assertNotEquals(foo, 'bar')
+        self.assertEqual(foo, 'foo')
+        self.assertNotEqual(foo, 'bar')
 
 
 class FlakeyConnection(DummyConnection):
@@ -307,13 +307,13 @@ class RetryClusterTest(BaseTest):
 
     def test_returns_correctly(self):
         cluster = self.build_cluster(connection=DummyConnection)
-        self.assertEquals(cluster.foo(), 'bar')
+        self.assertEqual(cluster.foo(), 'bar')
 
     def test_retry_router_when_receives_error(self):
         cluster = self.build_cluster()
 
         cluster.foo()
-        self.assertEquals({'retry_for': 0}, cluster.router.kwargs_seen.pop())
+        self.assertEqual({'retry_for': 0}, cluster.router.kwargs_seen.pop())
 
     def test_protection_from_infinate_loops(self):
         cluster = self.build_cluster(connection=ScumbagConnection)
@@ -326,48 +326,48 @@ class EventualCommandTest(BaseTest):
         ec = EventualCommand('foo')
         ec('bar', baz='foo')
 
-        self.assertEquals(repr(ec), u"<EventualCommand: foo args=('bar',) kwargs={'baz': 'foo'}>")
+        self.assertEqual(repr(ec), "<EventualCommand: foo args=('bar',) kwargs={'baz': 'foo'}>")
 
     def test_evaled_repr(self):
         ec = EventualCommand('foo')
         ec('bar', baz='foo')
         ec.resolve_as('biz')
 
-        self.assertEquals(repr(ec), u"'biz'")
+        self.assertEqual(repr(ec), "'biz'")
 
     def test_coersion(self):
         ec = EventualCommand('foo')()
         ec.resolve_as('5')
 
-        self.assertEquals(int(ec), 5)
+        self.assertEqual(int(ec), 5)
 
     def test_nonzero(self):
         ec = EventualCommand('foo')()
         ec.resolve_as(None)
 
-        self.assertEquals(int(ec or 0), 0)
+        self.assertEqual(int(ec or 0), 0)
 
     def test_evaled_unicode(self):
         ec = EventualCommand('foo')
         ec.resolve_as('biz')
 
-        self.assertEquals(six.text_type(ec), u'biz')
+        self.assertEqual(six.text_type(ec), 'biz')
 
     def test_command_error_returns_as_error(self):
         ec = EventualCommand('foo')
         ec.resolve_as(CommandError([ValueError('test')]))
-        self.assertEquals(ec.is_error, True)
+        self.assertEqual(ec.is_error, True)
 
     def test_other_error_does_not_return_as_error(self):
         ec = EventualCommand('foo')
         ec.resolve_as(ValueError('test'))
-        self.assertEquals(ec.is_error, False)
+        self.assertEqual(ec.is_error, False)
 
     def test_isinstance_check(self):
         ec = EventualCommand('foo')
         ec.resolve_as(['foo', 'bar'])
 
-        self.assertEquals(isinstance(ec, list), True)
+        self.assertEqual(isinstance(ec, list), True)
 
 
 class ApplyDefaultsTest(BaseTest):
@@ -375,7 +375,7 @@ class ApplyDefaultsTest(BaseTest):
         host = {'port': 6379}
         defaults = {'host': 'localhost'}
         results = apply_defaults(host, defaults)
-        self.assertEquals(results, {
+        self.assertEqual(results, {
             'port': 6379,
             'host': 'localhost',
         })
@@ -384,6 +384,6 @@ class ApplyDefaultsTest(BaseTest):
         host = {'port': 6379}
         defaults = {'port': 9000}
         results = apply_defaults(host, defaults)
-        self.assertEquals(results, {
+        self.assertEqual(results, {
             'port': 6379,
         })
