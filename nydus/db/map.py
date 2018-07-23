@@ -46,7 +46,7 @@ class BaseDistributedConnection(object):
                     kwargs=kwargs,
                 )
             else:
-                db_nums = six.iterkeys(self._cluster)
+                db_nums = list(six.iterkeys(self._cluster))
 
             for db_num in db_nums:
                 # add to pending commands
@@ -124,7 +124,7 @@ class DistributedConnection(BaseDistributedConnection):
         pool = self.get_pool(commands)
 
         # execute our pending commands either in the pool, or using a pipeline
-        for db_num, command_list in six.iteritems(commands):
+        for db_num, command_list in list(six.iteritems(commands)):
             for command in command_list:
                 # XXX: its important that we clone the command here so we dont override anything
                 # in the EventualCommand proxy (it can only resolve once)
@@ -146,14 +146,14 @@ class PipelinedDistributedConnection(BaseDistributedConnection):
         pool = self.get_pool(commands)
 
         # execute our pending commands either in the pool, or using a pipeline
-        for db_num, command_list in six.iteritems(commands):
+        for db_num, command_list in list(six.iteritems(commands)):
             pipes[db_num] = cluster[db_num].get_pipeline()
             for command in command_list:
                 # add to pipeline
                 pipes[db_num].add(command.clone())
 
         # We need to finalize our commands with a single execute in pipelines
-        for db_num, pipe in six.iteritems(pipes):
+        for db_num, pipe in list(six.iteritems(pipes)):
             pool.add(db_num, pipe.execute, (), {})
 
         # Consolidate commands with their appropriate results
@@ -162,7 +162,7 @@ class PipelinedDistributedConnection(BaseDistributedConnection):
         # Results get grouped by their command signature, so we have to separate the logic
         results = defaultdict(list)
 
-        for db_num, db_results in six.iteritems(db_result_map):
+        for db_num, db_results in list(six.iteritems(db_result_map)):
             # Pipelines always execute on a single database
             assert len(db_results) == 1
             db_results = db_results[0]
