@@ -37,13 +37,14 @@ class Redis(BaseConnection):
 
     def __init__(self, num, host='localhost', port=6379, db=0, timeout=None,
                  password=None, unix_socket_path=None, identifier=None,
-                 strict=True):
+                 strict=True, ssl=False):
         self.host = host
         self.port = port
         self.db = db
         self.unix_socket_path = unix_socket_path
         self.timeout = timeout
         self.strict = strict
+        self.ssl = ssl
         self.__identifier = identifier
         self.__password = password
         super(Redis, self).__init__(num)
@@ -64,7 +65,7 @@ class Redis(BaseConnection):
         return cls(
             host=self.host, port=self.port, db=self.db,
             socket_timeout=self.timeout, password=self.__password,
-            unix_socket_path=self.unix_socket_path)
+            unix_socket_path=self.unix_socket_path, ssl=self.ssl)
 
     def disconnect(self):
         self.connection.disconnect()
