@@ -11,6 +11,8 @@ from nydus.utils import ThreadPool
 from nydus.db.exceptions import CommandError
 from nydus.db.promise import EventualCommand, change_resolution
 
+import six
+
 
 class BaseDistributedConnection(object):
     def __init__(self, cluster, workers=None, fail_silently=False):
@@ -44,7 +46,7 @@ class BaseDistributedConnection(object):
                     kwargs=kwargs,
                 )
             else:
-                db_nums = self._cluster.keys()
+                db_nums = list(six.iterkeys(self._cluster))
 
             for db_num in db_nums:
                 # add to pending commands
@@ -58,10 +60,10 @@ class BaseDistributedConnection(object):
     def resolve(self):
         pending_commands = self._build_pending_commands()
 
-        num_commands = sum(len(v) for v in pending_commands.itervalues())
+        num_commands = sum(len(v) for v in six.itervalues(pending_commands))
         # Don't bother with the pooling if we only need to do one operation on a single machine
         if num_commands == 1:
-            db_num, (command,) = pending_commands.items()[0]
+            db_num, (command,) = six.next(six.iteritems(pending_commands))
             self._commands = [command.resolve(self._cluster[db_num])]
 
         elif num_commands > 1:
@@ -122,7 +124,7 @@ class DistributedConnection(BaseDistributedConnection):
         pool = self.get_pool(commands)
 
         # execute our pending commands either in the pool, or using a pipeline
-        for db_num, command_list in commands.iteritems():
+        for db_num, command_list in list(six.iteritems(commands)):
             for command in command_list:
                 # XXX: its important that we clone the command here so we dont override anything
                 # in the EventualCommand proxy (it can only resolve once)
@@ -144,14 +146,14 @@ class PipelinedDistributedConnection(BaseDistributedConnection):
         pool = self.get_pool(commands)
 
         # execute our pending commands either in the pool, or using a pipeline
-        for db_num, command_list in commands.iteritems():
+        for db_num, command_list in list(six.iteritems(commands)):
             pipes[db_num] = cluster[db_num].get_pipeline()
             for command in command_list:
                 # add to pipeline
                 pipes[db_num].add(command.clone())
 
         # We need to finalize our commands with a single execute in pipelines
-        for db_num, pipe in pipes.iteritems():
+        for db_num, pipe in list(six.iteritems(pipes)):
             pool.add(db_num, pipe.execute, (), {})
 
         # Consolidate commands with their appropriate results
@@ -160,7 +162,7 @@ class PipelinedDistributedConnection(BaseDistributedConnection):
         # Results get grouped by their command signature, so we have to separate the logic
         results = defaultdict(list)
 
-        for db_num, db_results in db_result_map.iteritems():
+        for db_num, db_results in list(six.iteritems(db_result_map)):
             # Pipelines always execute on a single database
             assert len(db_results) == 1
             db_results = db_results[0]
@@ -171,7 +173,7 @@ class PipelinedDistributedConnection(BaseDistributedConnection):
                     results[command].append(db_results)
                 continue
 
-            for command, result in db_results.iteritems():
+            for command, result in six.iteritems(db_results):
                 results[command].append(result)
 
         return results

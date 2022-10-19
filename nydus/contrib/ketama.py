@@ -4,6 +4,8 @@
     Rewrited from the original source: http://www.audioscrobbler.net/development/ketama/
 
 """
+from __future__ import print_function
+
 __author__ = "Andrey Nikishaev"
 __email__ = "creotiv@gmail.com"
 __version__ = 0.1
@@ -14,6 +16,9 @@ __all__ = ['Ketama']
 import hashlib
 import math
 from bisect import bisect
+
+import six
+from six.moves import range
 
 
 class Ketama(object):
@@ -45,10 +50,10 @@ class Ketama(object):
 
             ks = math.floor((40 * len(self._nodes) * weight) / total_weight)
 
-            for i in xrange(0, int(ks)):
+            for i in range(0, int(ks)):
                 b_key = self._md5_digest('%s-%s-salt' % (node, i))
 
-                for l in xrange(0, 4):
+                for l in range(0, 4):
                     key = ((b_key[3 + l * 4] << 24)
                            | (b_key[2 + l * 4] << 16)
                            | (b_key[1 + l * 4] << 8)
@@ -90,7 +95,7 @@ class Ketama(object):
                 | b_key[fn(0)])
 
     def _md5_digest(self, key):
-        return map(ord, hashlib.md5(key).digest())
+        return list(six.iterbytes(hashlib.md5(key.encode('utf-8')).digest()))
 
     def remove_node(self, node):
         """
@@ -130,18 +135,18 @@ class Ketama(object):
 if __name__ == '__main__':
     def test(k):
         data = {}
-        for i in xrange(REQUESTS):
+        for i in range(REQUESTS):
             tower = k.get_node('a' + str(i))
             data.setdefault(tower, 0)
             data[tower] += 1
-        print 'Number of caches on each node: '
-        print data
-        print ''
+        print('Number of caches on each node: ')
+        print(data)
+        print('')
 
-        print k.get_node('Aplple')
-        print k.get_node('Hello')
-        print k.get_node('Data')
-        print k.get_node('Computer')
+        print(k.get_node('Aplple'))
+        print(k.get_node('Hello'))
+        print(k.get_node('Data'))
+        print(k.get_node('Computer'))
 
     NODES = [
         '192.168.0.1:6000', '192.168.0.1:6001', '192.168.0.1:6002',

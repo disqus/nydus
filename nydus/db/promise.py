@@ -5,9 +5,13 @@ nydus.db.promise
 :copyright: (c) 2011 DISQUS.
 :license: Apache License 2.0, see LICENSE for more details.
 """
+from __future__ import unicode_literals
+
+from functools import wraps
+
+import six
 
 from nydus.db.exceptions import CommandError
-from functools import wraps
 
 
 def promise_method(func):
@@ -46,13 +50,13 @@ class EventualCommand(object):
         self.__resolved = False
         self.__args = args or []
         self.__kwargs = kwargs or {}
-        self.__ident = ':'.join(map(lambda x: str(hash(str(x))), [self.__attr, self.__args, self.__kwargs]))
+        self.__ident = ':'.join([str(hash(str(x))) for x in [self.__attr, self.__args, self.__kwargs]])
 
     def __call__(self, *args, **kwargs):
         self.__called = True
         self.__args = args
         self.__kwargs = kwargs
-        self.__ident = ':'.join(map(lambda x: str(hash(str(x))), [self.__attr, self.__args, self.__kwargs]))
+        self.__ident = ':'.join([str(hash(str(x))) for x in [self.__attr, self.__args, self.__kwargs]])
         return self
 
     def __hash__(self):
@@ -62,7 +66,7 @@ class EventualCommand(object):
     def __repr__(self):
         if self.__resolved:
             return repr(self.__wrapped)
-        return u'<EventualCommand: %s args=%s kwargs=%s>' % (self.__attr, self.__args, self.__kwargs)
+        return '<EventualCommand: %s args=%s kwargs=%s>' % (self.__attr, self.__args, self.__kwargs)
 
     def __str__(self):
         if self.__resolved:
@@ -71,8 +75,8 @@ class EventualCommand(object):
 
     def __unicode__(self):
         if self.__resolved:
-            return unicode(self.__wrapped)
-        return unicode(repr(self))
+            return six.text_type(self.__wrapped)
+        return six.text_type(repr(self))
 
     def __getattr__(self, name):
         return getattr(self.__wrapped, name)
@@ -156,7 +160,7 @@ class EventualCommand(object):
     __invert__ = lambda x: ~(x.__wrapped)
     __complex__ = lambda x: complex(x.__wrapped)
     __int__ = lambda x: int(x.__wrapped)
-    __long__ = lambda x: long(x.__wrapped)
+    __long__ = lambda x: int(x.__wrapped)
     __float__ = lambda x: float(x.__wrapped)
     __oct__ = lambda x: oct(x.__wrapped)
     __hex__ = lambda x: hex(x.__wrapped)

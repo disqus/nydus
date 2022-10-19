@@ -1,6 +1,9 @@
 from collections import defaultdict
-from Queue import Queue, Empty
 from threading import Thread
+
+import six
+from six.moves import range
+from six.moves.queue import Queue, Empty
 
 
 # import_string comes form Werkzeug
@@ -31,7 +34,7 @@ def import_string(import_name, silent=False):
 
 
 def apply_defaults(host, defaults):
-    for key, value in defaults.iteritems():
+    for key, value in six.iteritems(defaults):
         if key not in host:
             host[key] = value
     return host
@@ -39,7 +42,7 @@ def apply_defaults(host, defaults):
 
 def peek(value):
     generator = iter(value)
-    prev = generator.next()
+    prev = six.next(generator)
     for item in generator:
         yield prev, item
         prev = item
@@ -75,7 +78,7 @@ class ThreadPool(object):
         self.queue = Queue()
         self.workers = []
         self.tasks = []
-        for worker in xrange(workers):
+        for worker in range(workers):
             self.workers.append(Worker(self.queue))
 
     def add(self, ident, func, args=None, kwargs=None):
@@ -94,6 +97,6 @@ class ThreadPool(object):
         results = defaultdict(list)
         for worker in self.workers:
             worker.join()
-            for k, v in worker.results.iteritems():
+            for k, v in six.iteritems(worker.results):
                 results[k].extend(v)
         return results

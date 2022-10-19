@@ -45,7 +45,7 @@ def test_redis_normal(cluster):
 
 def test_redis_map(cluster):
     with cluster.map() as conn:
-        for n in xrange(5):
+        for n in range(5):
             conn.set('foo', 'bar')
             conn.get('foo')
             conn.set('biz', 'bar')
@@ -56,12 +56,12 @@ def test_redis_map(cluster):
 def main(iterations=1000):
     for cluster in ('partition_cluster', 'ketama_cluster', 'roundrobin_cluster'):
         for func in ('test_redis_normal', 'test_redis_map'):
-            print "Running %r on %r" % (func, cluster)
+            print("Running %r on %r" % (func, cluster))
             s = time.time()
-            for x in xrange(iterations):
+            for x in range(iterations):
                 globals()[func](globals()[cluster])
             t = (time.time() - s) * 1000
-            print "  %.3fms per iteration" % (t / iterations,)
+            print("  %.3fms per iteration" % (t / iterations,))
 
 
 if __name__ == '__main__':

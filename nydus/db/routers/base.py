@@ -13,6 +13,9 @@ import time
 from functools import wraps
 from itertools import cycle
 
+import six
+from six.moves import range
+
 
 def routing_params(func):
     @wraps(func)
@@ -70,7 +73,7 @@ class BaseRouter(object):
             args, kwargs = retval
 
         if not (args or kwargs):
-            return self.cluster.hosts.keys()
+            return list(self.cluster.hosts.keys())
 
         try:
             db_nums = self._route(attr=attr, args=args, kwargs=kwargs, **fkwargs)
@@ -112,7 +115,7 @@ class BaseRouter(object):
         """
         Perform routing and return db_nums
         """
-        return self.cluster.hosts.keys()
+        return list(self.cluster.hosts.keys())
 
     @routing_params
     def _post_routing(self, attr, db_nums, args, kwargs, **fkwargs):
@@ -179,7 +182,7 @@ class RoundRobinRouter(BaseRouter):
         """
         now = time.time()
 
-        for db_num, marked_down_at in self._down_connections.items():
+        for db_num, marked_down_at in list(six.iteritems(self._down_connections)):
             if marked_down_at + self.retry_timeout <= now:
                 self.mark_connection_up(db_num)
 
@@ -188,7 +191,7 @@ class RoundRobinRouter(BaseRouter):
         Marks all connections which were previously listed as unavailable as being up.
         """
         self._get_db_attempts = 0
-        for db_num in self._down_connections.keys():
+        for db_num in list(six.iterkeys(self._down_connections)):
             self.mark_connection_up(db_num)
 
     def mark_connection_down(self, db_num):
@@ -201,7 +204,7 @@ class RoundRobinRouter(BaseRouter):
 
     @routing_params
     def _setup_router(self, args, kwargs, **fkwargs):
-        self._hosts_cycler = cycle(self.cluster.hosts.keys())
+        self._hosts_cycler = cycle(six.viewkeys(self.cluster.hosts))
 
         return True
 
@@ -221,8 +224,8 @@ class RoundRobinRouter(BaseRouter):
     def _route(self, attr, args, kwargs, **fkwargs):
         now = time.time()
 
-        for i in xrange(len(self.cluster)):
-            db_num = self._hosts_cycler.next()
+        for i in range(len(self.cluster)):
+            db_num = six.next(self._hosts_cycler)
 
             marked_down_at = self._down_connections.get(db_num, False)
 

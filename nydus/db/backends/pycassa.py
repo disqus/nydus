@@ -48,7 +48,7 @@ class PycassaCluster(BaseCluster):
         assert isinstance(hosts, collections.Iterable), 'hosts must be an iterable'
         assert keyspace, 'keyspace must be set'
 
-        return super(PycassaCluster, self).__init__(
+        super(PycassaCluster, self).__init__(
             hosts={
                 0: {
                     'hosts': hosts,

@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 try:
     __import__('multiprocessing')
-except:
+except ImportError:
     pass
 
 if 'nosetests' in sys.argv:
@@ -21,8 +21,11 @@ tests_require = [
     'redis',
     'riak',
     'thoonk',
-    'unittest2',
 ]
+
+
+if sys.version_info < (2, 7):
+    tests_require.append('unittest2')
 
 dependency_links = [
     'https://github.com/andyet/thoonk.py/tarball/master#egg=thoonk',
@@ -30,6 +33,7 @@ dependency_links = [
 
 
 install_requires = [
+    'six',
 ]
 
 setup(

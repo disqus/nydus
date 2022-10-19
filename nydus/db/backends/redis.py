@@ -5,20 +5,19 @@ nydus.db.backends.redis
 :copyright: (c) 2011-2012 DISQUS.
 :license: Apache License 2.0, see LICENSE for more details.
 """
-
 from __future__ import absolute_import
 
-from itertools import izip
 from redis import Redis as RedisClient, StrictRedis
 from redis import ConnectionError, InvalidResponse
+from six.moves import zip
 
 from nydus.db.backends import BaseConnection, BasePipeline
 
 
 class RedisPipeline(BasePipeline):
+
     def __init__(self, connection):
-        self.pending = []
-        self.connection = connection
+        super(RedisPipeline, self).__init__(connection)
         self.pipe = connection.pipeline()
 
     def add(self, command):
@@ -28,7 +27,7 @@ class RedisPipeline(BasePipeline):
         getattr(self.pipe, name)(*args, **kwargs)
 
     def execute(self):
-        return dict(izip(self.pending, self.pipe.execute()))
+        return dict(zip(self.pending, self.pipe.execute()))
 
 
 class Redis(BaseConnection):
@@ -38,13 +37,14 @@ class Redis(BaseConnection):
 
     def __init__(self, num, host='localhost', port=6379, db=0, timeout=None,
                  password=None, unix_socket_path=None, identifier=None,
-                 strict=True):
+                 strict=True, ssl=False):
         self.host = host
         self.port = port
         self.db = db
         self.unix_socket_path = unix_socket_path
         self.timeout = timeout
         self.strict = strict
+        self.ssl = ssl
         self.__identifier = identifier
         self.__password = password
         super(Redis, self).__init__(num)
@@ -65,7 +65,7 @@ class Redis(BaseConnection):
         return cls(
             host=self.host, port=self.port, db=self.db,
             socket_timeout=self.timeout, password=self.__password,
-            unix_socket_path=self.unix_socket_path)
+            unix_socket_path=self.unix_socket_path, ssl=self.ssl)
 
     def disconnect(self):
         self.connection.disconnect()
