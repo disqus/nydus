@@ -110,7 +110,7 @@ class BaseCluster(object):
         """
         connections = self.__connections_for('get_conn', args=args, kwargs=kwargs)
 
-        if len(connections) is 1:
+        if len(connections) == 1:
             return connections[0]
         else:
             return connections
