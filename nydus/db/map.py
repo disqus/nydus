@@ -46,7 +46,7 @@ class BaseDistributedConnection(object):
                     kwargs=kwargs,
                 )
             else:
-                db_nums = self._cluster.keys()
+                db_nums = list(self._cluster.keys())
 
             for db_num in db_nums:
                 # add to pending commands

@@ -6,17 +6,13 @@ nydus.db.backends.redis
 :license: Apache License 2.0, see LICENSE for more details.
 """
 
-from __future__ import absolute_import
+
 
 from redis import Redis as RedisClient, StrictRedis
 from redis import ConnectionError, InvalidResponse
 
 from nydus.db.backends import BaseConnection, BasePipeline
 
-try:
-    from itertools import izip as zip
-except ImportError:
-    pass
 
 class RedisPipeline(BasePipeline):
     def __init__(self, connection):
@@ -31,7 +27,7 @@ class RedisPipeline(BasePipeline):
         getattr(self.pipe, name)(*args, **kwargs)
 
     def execute(self):
-        return dict(zip(self.pending, self.pipe.execute()))
+        return dict(list(zip(self.pending, self.pipe.execute())))
 
 
 class Redis(BaseConnection):

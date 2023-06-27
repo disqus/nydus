@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+
 
 import mock
 import time
@@ -73,7 +73,7 @@ class BaseRouterTest(BaseTest):
         self.assertIsNone(setupdefaults)
 
     def test_returns_whole_cluster_without_key(self):
-        self.assertEquals(list(self.hosts.keys()), self.get_dbs(attr='test'))
+        self.assertEqual(list(self.hosts.keys()), self.get_dbs(attr='test'))
 
     def test_get_dbs_handles_exception(self):
         with mock.patch.object(self.router, '_route') as _route:
@@ -239,14 +239,14 @@ class ConsistentHashingRouterTest(BaseRoundRobinRouterTest):
         return super(ConsistentHashingRouterTest, self).get_dbs(*args, **kwargs)
 
     def test_retry_gives_next_host_if_primary_is_offline(self):
-        self.assertEquals([2], self.get_dbs(args=('foo',)))
-        self.assertEquals([4], self.get_dbs(args=('foo',), retry_for=2))
+        self.assertEqual([2], self.get_dbs(args=('foo',)))
+        self.assertEqual([4], self.get_dbs(args=('foo',), retry_for=2))
 
     def test_retry_host_change_is_sticky(self):
-        self.assertEquals([2], self.get_dbs(args=('foo',)))
-        self.assertEquals([4], self.get_dbs(args=('foo',), retry_for=2))
+        self.assertEqual([2], self.get_dbs(args=('foo',)))
+        self.assertEqual([4], self.get_dbs(args=('foo',), retry_for=2))
 
-        self.assertEquals([4], self.get_dbs(args=('foo',)))
+        self.assertEqual([4], self.get_dbs(args=('foo',)))
 
     def test_raises_host_list_exhaused_if_no_host_can_be_found(self):
         # Kill the first 4

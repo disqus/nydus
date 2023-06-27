@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+
 
 from nydus.db import create_cluster
 from nydus.db.base import BaseCluster
@@ -35,7 +35,7 @@ class RedisPipelineTest(BaseTest):
     def test_map_single_connection(self):
         with self.cluster.map() as conn:
             conn.set('a', '1')
-        self.assertEquals(self.cluster.get('a').decode('utf-8'), '1')
+        self.assertEqual(self.cluster.get('a').decode('utf-8'), '1')
 
     def test_no_proxy_without_call_on_map(self):
         with self.cluster.map() as conn:
@@ -52,27 +52,27 @@ class RedisTest(BaseTest):
         self.redis.flushdb()
 
     def test_proxy(self):
-        self.assertEquals(self.redis.incr('RedisTest_proxy'), 1)
+        self.assertEqual(self.redis.incr('RedisTest_proxy'), 1)
 
     def test_with_cluster(self):
         p = BaseCluster(
             backend=Redis,
             hosts={0: {'db': 1}},
         )
-        self.assertEquals(p.incr('RedisTest_with_cluster'), 1)
+        self.assertEqual(p.incr('RedisTest_with_cluster'), 1)
 
     def test_provides_retryable_exceptions(self):
-        self.assertEquals(Redis.retryable_exceptions, frozenset([redis_.ConnectionError, redis_.InvalidResponse]))
+        self.assertEqual(Redis.retryable_exceptions, frozenset([redis_.ConnectionError, redis_.InvalidResponse]))
 
     def test_provides_identifier(self):
-        self.assertEquals(self.redis.identifier, str(self.redis.identifier))
+        self.assertEqual(self.redis.identifier, str(self.redis.identifier))
 
     @mock.patch('nydus.db.backends.redis.StrictRedis')
     def test_client_instantiates_with_kwargs(self, RedisClient):
         client = Redis(num=0)
         client.connect()
 
-        self.assertEquals(RedisClient.call_count, 1)
+        self.assertEqual(RedisClient.call_count, 1)
         RedisClient.assert_any_call(host='localhost', port=6379, db=0, socket_timeout=None,
             password=None, unix_socket_path=None)
 
@@ -94,14 +94,14 @@ class RedisTest(BaseTest):
         # ensure this was actually called through the pipeline
         self.assertFalse(RedisClient().set.called)
 
-        self.assertEquals(RedisClient().pipeline.call_count, 2)
+        self.assertEqual(RedisClient().pipeline.call_count, 2)
         RedisClient().pipeline.assert_called_with()
 
-        self.assertEquals(RedisClient().pipeline().set.call_count, 2)
+        self.assertEqual(RedisClient().pipeline().set.call_count, 2)
         RedisClient().pipeline().set.assert_any_call('a', 0)
         RedisClient().pipeline().set.assert_any_call('d', 1)
 
-        self.assertEquals(RedisClient().pipeline().execute.call_count, 2)
+        self.assertEqual(RedisClient().pipeline().execute.call_count, 2)
         RedisClient().pipeline().execute.assert_called_with()
 
     @mock.patch('nydus.db.backends.redis.StrictRedis')
@@ -121,14 +121,14 @@ class RedisTest(BaseTest):
         # ensure this was actually called through the pipeline
         self.assertFalse(RedisClient().set.called)
 
-        self.assertEquals(RedisClient().pipeline.call_count, 1)
+        self.assertEqual(RedisClient().pipeline.call_count, 1)
         RedisClient().pipeline.assert_called_with()
 
-        self.assertEquals(RedisClient().pipeline().set.call_count, 2)
+        self.assertEqual(RedisClient().pipeline().set.call_count, 2)
         RedisClient().pipeline().set.assert_any_call('a', 0)
         RedisClient().pipeline().set.assert_any_call('b', 1)
 
-        self.assertEquals(RedisClient().pipeline().execute.call_count, 1)
+        self.assertEqual(RedisClient().pipeline().execute.call_count, 1)
         RedisClient().pipeline().execute.assert_called_with()
 
     def test_normal_exceptions_dont_break_the_cluster(self):
@@ -163,6 +163,6 @@ class RedisTest(BaseTest):
         }
 
         redis = create_cluster(cluster_config)
-        for idx in cluster_config['hosts'].keys():
-            self.assertEquals(redis.hosts[idx].identifier,
+        for idx in list(cluster_config['hosts'].keys()):
+            self.assertEqual(redis.hosts[idx].identifier,
                               cluster_config['hosts'][idx]['identifier'])

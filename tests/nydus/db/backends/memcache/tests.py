@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+
 
 from nydus.db import create_cluster
 from nydus.db.base import BaseCluster
@@ -15,55 +15,55 @@ class CanGroupCommandsTest(BaseTest):
     def test_groupable_set_commands(self):
         command = EventualCommand('set', ['foo', 1])
         other = EventualCommand('set', ['bar', 2])
-        self.assertEquals(can_group_commands(command, other), True)
+        self.assertEqual(can_group_commands(command, other), True)
 
     def test_ungroupable_set_commands(self):
         command = EventualCommand('set', ['foo', 1], {'timeout': 1})
         other = EventualCommand('set', ['bar', 2], {'timeout': 2})
-        self.assertEquals(can_group_commands(command, other), False)
+        self.assertEqual(can_group_commands(command, other), False)
 
     def test_groupable_get_commands(self):
         command = EventualCommand('get', ['foo'])
         other = EventualCommand('get', ['bar'])
-        self.assertEquals(can_group_commands(command, other), True)
+        self.assertEqual(can_group_commands(command, other), True)
 
     def test_ungroupable_get_commands(self):
         command = EventualCommand('get', ['foo'], {'timeout': 1})
         other = EventualCommand('get', ['bar'], {'timeout': 2})
-        self.assertEquals(can_group_commands(command, other), False)
+        self.assertEqual(can_group_commands(command, other), False)
 
     def test_groupable_delete_commands(self):
         command = EventualCommand('delete', ['foo'])
         other = EventualCommand('delete', ['bar'])
-        self.assertEquals(can_group_commands(command, other), True)
+        self.assertEqual(can_group_commands(command, other), True)
 
     def test_ungroupable_delete_commands(self):
         command = EventualCommand('delete', ['foo'], {'timeout': 1})
         other = EventualCommand('delete', ['bar'], {'timeout': 2})
-        self.assertEquals(can_group_commands(command, other), False)
+        self.assertEqual(can_group_commands(command, other), False)
 
 
 class GroupedArgsForCommandTest(BaseTest):
     def test_set_excludes_first_two_args(self):
         command = EventualCommand('set', ['foo', 1, 'biz'])
         result = grouped_args_for_command(command)
-        self.assertEquals(result, ['biz'])
+        self.assertEqual(result, ['biz'])
 
     def test_get_excludes_first_arg(self):
         command = EventualCommand('get', ['foo', 1])
         result = grouped_args_for_command(command)
-        self.assertEquals(result, [1])
+        self.assertEqual(result, [1])
 
     def test_delete_excludes_first_arg(self):
         command = EventualCommand('delete', ['foo', 1])
         result = grouped_args_for_command(command)
-        self.assertEquals(result, [1])
+        self.assertEqual(result, [1])
 
 
 class RegroupCommandsTest(BaseTest):
     def get_grouped_results(self, commands, num_expected):
         grouped = regroup_commands(commands)
-        self.assertEquals(len(grouped), num_expected, grouped)
+        self.assertEqual(len(grouped), num_expected, grouped)
         return grouped
 
     def test_set_basic(self):
@@ -76,23 +76,23 @@ class RegroupCommandsTest(BaseTest):
         items = self.get_grouped_results(commands, 2)
 
         new_command, grouped_commands = items[0]
-        self.assertEquals(len(grouped_commands), 2)
-        self.assertEquals(grouped_commands, commands[0:2])
-        self.assertEquals(new_command.get_name(), 'set_multi')
-        self.assertEquals(new_command.get_args(), ({
+        self.assertEqual(len(grouped_commands), 2)
+        self.assertEqual(grouped_commands, commands[0:2])
+        self.assertEqual(new_command.get_name(), 'set_multi')
+        self.assertEqual(new_command.get_args(), ({
             'foo': 1,
             'bar': 2,
         },))
-        self.assertEquals(new_command.get_kwargs(), {
+        self.assertEqual(new_command.get_kwargs(), {
             'timeout': 1,
         })
 
         new_command, grouped_commands = items[1]
-        self.assertEquals(len(grouped_commands), 1)
-        self.assertEquals(grouped_commands, commands[2:3])
-        self.assertEquals(new_command.get_name(), 'set')
-        self.assertEquals(new_command.get_args(), ['baz', 3])
-        self.assertEquals(new_command.get_kwargs(), {
+        self.assertEqual(len(grouped_commands), 1)
+        self.assertEqual(grouped_commands, commands[2:3])
+        self.assertEqual(new_command.get_name(), 'set')
+        self.assertEqual(new_command.get_args(), ['baz', 3])
+        self.assertEqual(new_command.get_kwargs(), {
             'timeout': 2,
         })
 
@@ -105,20 +105,20 @@ class RegroupCommandsTest(BaseTest):
         items = self.get_grouped_results(commands, 2)
 
         new_command, grouped_commands = items[0]
-        self.assertEquals(len(grouped_commands), 2)
-        self.assertEquals(grouped_commands, commands[0:2])
-        self.assertEquals(new_command.get_name(), 'get_multi')
-        self.assertEquals(new_command.get_args(), (['foo', 'bar'],))
-        self.assertEquals(new_command.get_kwargs(), {
+        self.assertEqual(len(grouped_commands), 2)
+        self.assertEqual(grouped_commands, commands[0:2])
+        self.assertEqual(new_command.get_name(), 'get_multi')
+        self.assertEqual(new_command.get_args(), (['foo', 'bar'],))
+        self.assertEqual(new_command.get_kwargs(), {
             'key_prefix': 1,
         })
 
         new_command, grouped_commands = items[1]
-        self.assertEquals(len(grouped_commands), 1)
-        self.assertEquals(grouped_commands, commands[2:3])
-        self.assertEquals(new_command.get_name(), 'get')
-        self.assertEquals(new_command.get_args(), ['baz'])
-        self.assertEquals(new_command.get_kwargs(), {
+        self.assertEqual(len(grouped_commands), 1)
+        self.assertEqual(grouped_commands, commands[2:3])
+        self.assertEqual(new_command.get_name(), 'get')
+        self.assertEqual(new_command.get_args(), ['baz'])
+        self.assertEqual(new_command.get_kwargs(), {
             'key_prefix': 2,
         })
 
@@ -131,20 +131,20 @@ class RegroupCommandsTest(BaseTest):
         items = self.get_grouped_results(commands, 2)
 
         new_command, grouped_commands = items[0]
-        self.assertEquals(len(grouped_commands), 2)
-        self.assertEquals(grouped_commands, commands[0:2])
-        self.assertEquals(new_command.get_name(), 'delete_multi')
-        self.assertEquals(new_command.get_args(), (['foo', 'bar'],))
-        self.assertEquals(new_command.get_kwargs(), {
+        self.assertEqual(len(grouped_commands), 2)
+        self.assertEqual(grouped_commands, commands[0:2])
+        self.assertEqual(new_command.get_name(), 'delete_multi')
+        self.assertEqual(new_command.get_args(), (['foo', 'bar'],))
+        self.assertEqual(new_command.get_kwargs(), {
             'key_prefix': 1,
         })
 
         new_command, grouped_commands = items[1]
-        self.assertEquals(len(grouped_commands), 1)
-        self.assertEquals(grouped_commands, commands[2:3])
-        self.assertEquals(new_command.get_name(), 'delete')
-        self.assertEquals(new_command.get_args(), ['baz'])
-        self.assertEquals(new_command.get_kwargs(), {
+        self.assertEqual(len(grouped_commands), 1)
+        self.assertEqual(grouped_commands, commands[2:3])
+        self.assertEqual(new_command.get_name(), 'delete')
+        self.assertEqual(new_command.get_args(), ['baz'])
+        self.assertEqual(new_command.get_kwargs(), {
             'key_prefix': 2,
         })
 
@@ -159,30 +159,30 @@ class RegroupCommandsTest(BaseTest):
         items = self.get_grouped_results(commands, 3)
 
         new_command, grouped_commands = items[0]
-        self.assertEquals(len(grouped_commands), 1)
-        self.assertEquals(grouped_commands, commands[2:3])
-        self.assertEquals(new_command.get_name(), 'get')
-        self.assertEquals(new_command.get_args(), ['foo'])
-        self.assertEquals(new_command.get_kwargs(), {})
+        self.assertEqual(len(grouped_commands), 1)
+        self.assertEqual(grouped_commands, commands[2:3])
+        self.assertEqual(new_command.get_name(), 'get')
+        self.assertEqual(new_command.get_args(), ['foo'])
+        self.assertEqual(new_command.get_kwargs(), {})
 
         new_command, grouped_commands = items[1]
-        self.assertEquals(len(grouped_commands), 2)
-        self.assertEquals(grouped_commands, commands[0:2])
-        self.assertEquals(new_command.get_name(), 'set_multi')
-        self.assertEquals(new_command.get_args(), ({
+        self.assertEqual(len(grouped_commands), 2)
+        self.assertEqual(grouped_commands, commands[0:2])
+        self.assertEqual(new_command.get_name(), 'set_multi')
+        self.assertEqual(new_command.get_args(), ({
             'bar': 1,
             'baz': 2,
         },))
-        self.assertEquals(new_command.get_kwargs(), {
+        self.assertEqual(new_command.get_kwargs(), {
             'timeout': 1,
         })
 
         new_command, grouped_commands = items[2]
-        self.assertEquals(len(grouped_commands), 1)
-        self.assertEquals(grouped_commands, commands[2:3])
-        self.assertEquals(new_command.get_name(), 'get')
-        self.assertEquals(new_command.get_args(), ['bar'])
-        self.assertEquals(new_command.get_kwargs(), {})
+        self.assertEqual(len(grouped_commands), 1)
+        self.assertEqual(grouped_commands, commands[2:3])
+        self.assertEqual(new_command.get_name(), 'get')
+        self.assertEqual(new_command.get_args(), ['bar'])
+        self.assertEqual(new_command.get_kwargs(), {})
 
 
 class MemcacheTest(BaseTest):
@@ -192,17 +192,17 @@ class MemcacheTest(BaseTest):
         return Memcache(num=0)
 
     def test_provides_retryable_exceptions(self):
-        self.assertEquals(Memcache.retryable_exceptions, frozenset([pylibmc.Error]))
+        self.assertEqual(Memcache.retryable_exceptions, frozenset([pylibmc.Error]))
 
     def test_provides_identifier(self):
-        self.assertEquals(self.memcache.identifier, str(self.memcache.identifier))
+        self.assertEqual(self.memcache.identifier, str(self.memcache.identifier))
 
     @mock.patch('pylibmc.Client')
     def test_client_instantiates_with_kwargs(self, Client):
         client = Memcache(num=0)
         client.connect()
 
-        self.assertEquals(Client.call_count, 1)
+        self.assertEqual(Client.call_count, 1)
         Client.assert_any_call(['localhost:11211'], binary=True, behaviors=None)
 
     @mock.patch('pylibmc.Client.get')
@@ -213,7 +213,7 @@ class MemcacheTest(BaseTest):
         )
         result = p.get('MemcacheTest_with_cluster')
         get.assert_called_once_with('MemcacheTest_with_cluster')
-        self.assertEquals(result, get.return_value)
+        self.assertEqual(result, get.return_value)
 
     @mock.patch('pylibmc.Client')
     def test_pipeline_behavior(self, Client):
@@ -252,6 +252,6 @@ class MemcacheTest(BaseTest):
             conn.get('c')
 
         results = conn.get_results()
-        self.assertEquals(len(results), 6, results)
-        self.assertEquals(results[0:3], [None, None, None])
-        self.assertEquals(results[3:6], [1, 2, 3])
+        self.assertEqual(len(results), 6, results)
+        self.assertEqual(results[0:3], [None, None, None])
+        self.assertEqual(results[3:6], [1, 2, 3])

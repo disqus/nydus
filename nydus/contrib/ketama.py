@@ -4,7 +4,7 @@
     Rewrited from the original source: http://www.audioscrobbler.net/development/ketama/
 
 """
-from __future__ import print_function
+
 
 __author__ = "Andrey Nikishaev"
 __email__ = "creotiv@gmail.com"

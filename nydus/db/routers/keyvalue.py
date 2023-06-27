@@ -54,7 +54,7 @@ class ConsistentHashingRouter(RoundRobinRouter):
     @routing_params
     def _setup_router(self, args, kwargs, **fkwargs):
         self._db_num_id_map = dict([(db_num, host.identifier) for db_num, host in six.iteritems(self.cluster.hosts)])
-        self._hash = Ketama(self._db_num_id_map.values())
+        self._hash = Ketama(list(self._db_num_id_map.values()))
 
         return True
 
