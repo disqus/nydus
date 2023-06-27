@@ -16,7 +16,6 @@ else:
 tests_require = [
     'mock',
     'nose',
-    'pycassa',
     'pylibmc',
     'redis',
     'riak',
