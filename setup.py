@@ -9,13 +9,13 @@ except ImportError:
     pass
 
 if 'nosetests' in sys.argv:
-    setup_requires = ['nose']
+    setup_requires = ['nose3']
 else:
     setup_requires = []
 
 tests_require = [
     'mock',
-    'nose',
+    'nose3',
     'pylibmc',
     'redis',
     'riak',
