@@ -26,7 +26,7 @@ install_requires = [
 
 setup(
     name='nydus',
-    version='0.11.0',
+    version='0.12.0',
     author='DISQUS',
     author_email='opensource@disqus.com',
     url='https://github.com/disqus/nydus',
@@ -41,6 +41,8 @@ setup(
     include_package_data=True,
     license='Apache License 2.0',
     classifiers=[
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3 :: Only',
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
         'Operating System :: OS Independent',
