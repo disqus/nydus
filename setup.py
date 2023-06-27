@@ -18,7 +18,6 @@ tests_require = [
     'nose3',
     'pylibmc',
     'redis',
-    'riak',
 ]
 
 
