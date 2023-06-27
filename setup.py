@@ -19,17 +19,11 @@ tests_require = [
     'pylibmc',
     'redis',
     'riak',
-    'thoonk',
 ]
 
 
 if sys.version_info < (2, 7):
     tests_require.append('unittest2')
-
-dependency_links = [
-    'https://github.com/andyet/thoonk.py/tarball/master#egg=thoonk',
-]
-
 
 install_requires = [
     'six',
@@ -46,7 +40,6 @@ setup(
     zip_safe=False,
     setup_requires=setup_requires,
     install_requires=install_requires,
-    dependency_links=dependency_links,
     tests_require=tests_require,
     extras_require={'test': tests_require},
     test_suite='nose.collector',
