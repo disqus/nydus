@@ -89,4 +89,13 @@ class PartitionRouter(BaseRouter):
         """
         key = get_key(args, kwargs)
 
-        return [crc32(key.encode('utf-8')) % len(self.cluster)]
+        crc = crc32(key.encode('utf-8'))
+
+        # binascii.crc32 in python2 returns a signed 32-bit integer, which was
+        # changed in python3 to always return an unsigned 32-bit integer. For
+        # compatibility, we will convert to signed to match the previous
+        # behavior.
+        #
+        # Note that 0x80000000 == (2**31)
+        crc = (crc ^ 0x80000000) - 0x80000000
+        return [crc % len(self.cluster)]
