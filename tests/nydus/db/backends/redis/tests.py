@@ -30,12 +30,12 @@ class RedisPipelineTest(BaseTest):
         with self.cluster.map() as conn:
             [conn.set(c, i) for i, c in enumerate(chars)]
             res = [conn.get(c) for c in chars]
-        self.assertEqual(range(len(chars)), [int(r) for r in res])
+        self.assertEqual(list(range(len(chars))), [int(r) for r in res])
 
     def test_map_single_connection(self):
         with self.cluster.map() as conn:
             conn.set('a', '1')
-        self.assertEquals(self.cluster.get('a'), '1')
+        self.assertEquals(self.cluster.get('a').decode('utf-8'), '1')
 
     def test_no_proxy_without_call_on_map(self):
         with self.cluster.map() as conn:

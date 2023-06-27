@@ -3,8 +3,8 @@ from __future__ import absolute_import
 import mock
 import time
 
-from collections import Iterable
-from inspect import getargspec
+from collections.abc import Iterable
+from inspect import getfullargspec
 
 from nydus.db.base import BaseCluster
 from nydus.db.backends import BaseConnection
@@ -62,13 +62,13 @@ class BaseRouterTest(BaseTest):
     def test_offers_router_interface(self):
         func = _get_func(self.router.get_dbs)
         self.assertTrue(callable(func))
-        dbargs, _, _, dbdefaults = getargspec(func)
+        dbargs, _, _, dbdefaults, _, _, _ = getfullargspec(func)
         self.assertTrue(set(dbargs) >= set(['self', 'attr', 'args', 'kwargs']))
         self.assertIsNone(dbdefaults)
 
         func = _get_func(self.router.setup_router)
         self.assertTrue(callable(func))
-        setupargs, _, _, setupdefaults = getargspec(func)
+        setupargs, _, _, setupdefaults, _, _, _ = getfullargspec(func)
         self.assertTrue(set(setupargs) >= set(['self', 'args', 'kwargs']))
         self.assertIsNone(setupdefaults)
 

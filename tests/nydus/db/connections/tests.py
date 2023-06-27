@@ -19,6 +19,12 @@ class DummyConnection(BaseConnection):
         self.resp = resp
         super(DummyConnection, self).__init__(num, **kwargs)
 
+    def connect(self):
+        pass
+
+    def disconnect(self):
+        pass
+
     def foo(self, *args, **kwargs):
         return self.resp
 
@@ -140,7 +146,14 @@ class ClusterTest(BaseTest):
             hosts={0: {'resp': 'bar'}},
         )
         p.disconnect()
-        c.disconnect.assert_called_once()
+
+        # The BaseCluster initialization will create a new mock object from the
+        # passed in backend, so we can not simply use
+        # `c.disconnect.assert_called()`.
+        #
+        # There is surely a better way to account for this.
+        for conn in six.itervalues(p.hosts):
+            conn.disconnect.assert_called_once()
 
     def test_with_split_router(self):
         p = BaseCluster(

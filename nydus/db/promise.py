@@ -75,6 +75,8 @@ class EventualCommand(object):
         return unicode(repr(self))
 
     def __getattr__(self, name):
+        if self.__wrapped is None:
+            return None
         return getattr(self.__wrapped, name)
 
     def __setattr__(self, name, value):
@@ -121,6 +123,11 @@ class EventualCommand(object):
             return False
         return isinstance(self._wrapped, cls)
 
+    def __len__(self):
+        if self._wrapped is None:
+            return 0
+        return len(self._wrapped)
+
     __lt__ = lambda x, o: x.__wrapped < o
     __le__ = lambda x, o: x.__wrapped <= o
     __eq__ = lambda x, o: x.__wrapped == o
@@ -131,7 +138,6 @@ class EventualCommand(object):
     # attributes are currently not callable
     # __call__ = lambda x, *a, **kw: x.__wrapped(*a, **kw)
     __nonzero__ = lambda x: bool(x.__wrapped)
-    __len__ = lambda x: len(x.__wrapped)
     __getitem__ = lambda x, i: x.__wrapped[i]
     __iter__ = lambda x: iter(x.__wrapped)
     __contains__ = lambda x, i: i in x.__wrapped
